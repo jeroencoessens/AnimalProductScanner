@@ -14,7 +14,6 @@ public class CameraManager : MonoBehaviour
     public TextMeshProUGUI resultText;
     public RawImage previewDisplay;
 
-    // --- BUTTON: TAKE NEW PHOTO ---
     public void OnTakeClick()
     {
 #if UNITY_EDITOR
@@ -22,25 +21,18 @@ public class CameraManager : MonoBehaviour
         if (!string.IsNullOrEmpty(path)) ProcessImage(path);
 #else
         if (NativeCamera.IsCameraBusy()) return;
-
-        // Note: TakePicture returns void in recent versions. 
-        // Permission is handled internally by the plugin.
         NativeCamera.TakePicture((path) => {
             if (path != null) ProcessImage(path);
         }, maxSize: 1024);
 #endif
     }
 
-    // --- BUTTON: PICK FROM GALLERY ---
     public void OnGalleryClick()
     {
 #if UNITY_EDITOR
         OnTakeClick(); 
 #else
         if (NativeGallery.IsMediaPickerBusy()) return;
-
-        // FIXED: Removed the 'Permission permission =' assignment to avoid CS0029 error.
-        // The callback logic handles the path once the user selects an image.
         NativeGallery.GetImageFromGallery((path) =>
         {
             if (path != null) ProcessImage(path);
@@ -53,27 +45,35 @@ public class CameraManager : MonoBehaviour
         initialPanel.SetActive(false);
         loadingPanel.SetActive(true);
 
-        byte[] imageBytes = File.ReadAllBytes(path);
-        DisplayImagePreview(imageBytes);
+        // 1. Load the Texture for the UI using the NativeGallery helper (Reliable for iOS)
+        // This ensures the preview is shown even if System.IO fails on iOS
+        Texture2D pickedTex = NativeGallery.LoadImageAtPath(path, maxSize: 1024, markTextureNonReadable: false);
+        
+        if (pickedTex != null)
+        {
+            if (previewDisplay.texture != null) Destroy(previewDisplay.texture);
+            previewDisplay.texture = pickedTex;
+            
+            if (previewDisplay.TryGetComponent<AspectRatioFitter>(out var fitter))
+                fitter.aspectRatio = (float)pickedTex.width / pickedTex.height;
 
-        StartCoroutine(geminiClient.AnalyzeImage(imageBytes, (result) => {
-            ShowResults(result);
-        }, (error) => {
+            // 2. Convert the loaded texture to bytes for Gemini
+            // This is safer than File.ReadAllBytes(path) for iOS gallery files
+            byte[] imageBytes = pickedTex.EncodeToJPG();
+
+            StartCoroutine(geminiClient.AnalyzeImage(imageBytes, (result) => {
+                ShowResults(result);
+            }, (error) => {
+                loadingPanel.SetActive(false);
+                initialPanel.SetActive(true);
+                resultText.text = error;
+            }));
+        }
+        else
+        {
+            Debug.LogError("Failed to load image at path: " + path);
             loadingPanel.SetActive(false);
             initialPanel.SetActive(true);
-            resultText.text = error;
-        }));
-    }
-
-    private void DisplayImagePreview(byte[] bytes)
-    {
-        if (previewDisplay.texture != null) Destroy(previewDisplay.texture);
-        Texture2D tex = new Texture2D(2, 2);
-        if (tex.LoadImage(bytes)) 
-        {
-            previewDisplay.texture = tex;
-            if (previewDisplay.TryGetComponent<AspectRatioFitter>(out var fitter))
-                fitter.aspectRatio = (float)tex.width / tex.height;
         }
     }
 
@@ -85,8 +85,6 @@ public class CameraManager : MonoBehaviour
         if (result != null)
         {
             string items = (result.animalItems != null) ? string.Join(", ", result.animalItems) : "None";
-            
-            // Adding colors for better readability
             string verdictColor = result.containsAnimalProducts ? "#FF5555" : "#55FF55";
             string verdictText = result.containsAnimalProducts ? "NON-VEGAN" : "VEGAN / CLEAN";
 
@@ -95,7 +93,6 @@ public class CameraManager : MonoBehaviour
                               $"<b>Est. Animals:</b> {result.estimatedAnimalCount}";
         }
 
-        // Assuming UIManager is a singleton in your project
         if(UIManager.instance != null)
             UIManager.instance.SetTimeSpentText();
     }
