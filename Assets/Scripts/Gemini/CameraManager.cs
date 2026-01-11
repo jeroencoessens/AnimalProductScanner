@@ -22,6 +22,9 @@ public class CameraManager : MonoBehaviour
         if (!string.IsNullOrEmpty(path)) ProcessImage(path);
 #else
         if (NativeCamera.IsCameraBusy()) return;
+
+        // Note: TakePicture returns void in recent versions. 
+        // Permission is handled internally by the plugin.
         NativeCamera.TakePicture((path) => {
             if (path != null) ProcessImage(path);
         }, maxSize: 1024);
@@ -32,12 +35,13 @@ public class CameraManager : MonoBehaviour
     public void OnGalleryClick()
     {
 #if UNITY_EDITOR
-        // Same as TakeClick for desktop testing
         OnTakeClick(); 
 #else
         if (NativeGallery.IsMediaPickerBusy()) return;
 
-        NativeGallery.Permission permission = NativeGallery.GetImageFromGallery((path) =>
+        // FIXED: Removed the 'Permission permission =' assignment to avoid CS0029 error.
+        // The callback logic handles the path once the user selects an image.
+        NativeGallery.GetImageFromGallery((path) =>
         {
             if (path != null) ProcessImage(path);
         }, title: "Select a Food Image", mime: "image/*");
@@ -81,11 +85,18 @@ public class CameraManager : MonoBehaviour
         if (result != null)
         {
             string items = (result.animalItems != null) ? string.Join(", ", result.animalItems) : "None";
-            resultText.text = $"<b>Verdict:</b> {(result.containsAnimalProducts ? "<color=red>Non-Vegan</color>" : "<color=green>Vegan</color>")}\n" +
+            
+            // Adding colors for better readability
+            string verdictColor = result.containsAnimalProducts ? "#FF5555" : "#55FF55";
+            string verdictText = result.containsAnimalProducts ? "NON-VEGAN" : "VEGAN / CLEAN";
+
+            resultText.text = $"<b>Verdict:</b> <color={verdictColor}>{verdictText}</color>\n\n" +
                               $"<b>Items:</b> {items}\n" +
                               $"<b>Est. Animals:</b> {result.estimatedAnimalCount}";
         }
 
-        UIManager.instance.SetTimeSpentText();
+        // Assuming UIManager is a singleton in your project
+        if(UIManager.instance != null)
+            UIManager.instance.SetTimeSpentText();
     }
 }
