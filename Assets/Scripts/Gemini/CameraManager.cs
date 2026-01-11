@@ -14,28 +14,33 @@ public class CameraManager : MonoBehaviour
     public TextMeshProUGUI resultText;
     public RawImage previewDisplay;
 
+    // --- BUTTON: TAKE NEW PHOTO ---
     public void OnTakeClick()
     {
 #if UNITY_EDITOR
-        // Desktop logic using Unity Editor tools
-        string path = EditorUtility.OpenFilePanel("Select Image to Test", "", "jpg,png,jpeg");
+        string path = EditorUtility.OpenFilePanel("Select Image", "", "jpg,png,jpeg");
         if (!string.IsNullOrEmpty(path)) ProcessImage(path);
 #else
-        // Mobile logic using NativeCamera
         if (NativeCamera.IsCameraBusy()) return;
+        NativeCamera.TakePicture((path) => {
+            if (path != null) ProcessImage(path);
+        }, maxSize: 1024);
+#endif
+    }
 
-        // TakePicture returns void. The result is handled in the callback (path) => { ... }
-        NativeCamera.TakePicture((path) =>
+    // --- BUTTON: PICK FROM GALLERY ---
+    public void OnGalleryClick()
+    {
+#if UNITY_EDITOR
+        // Same as TakeClick for desktop testing
+        OnTakeClick(); 
+#else
+        if (NativeGallery.IsMediaPickerBusy()) return;
+
+        NativeGallery.Permission permission = NativeGallery.GetImageFromGallery((path) =>
         {
-            if (path != null)
-            {
-                ProcessImage(path);
-            }
-            else
-            {
-                Debug.Log("User cancelled camera or no image captured.");
-            }
-        }, maxSize: 1024); // Limit size for faster AI upload
+            if (path != null) ProcessImage(path);
+        }, title: "Select a Food Image", mime: "image/*");
 #endif
     }
 
@@ -45,11 +50,8 @@ public class CameraManager : MonoBehaviour
         loadingPanel.SetActive(true);
 
         byte[] imageBytes = File.ReadAllBytes(path);
-
-        // Display locally for user review
         DisplayImagePreview(imageBytes);
 
-        // Upload to Gemini
         StartCoroutine(geminiClient.AnalyzeImage(imageBytes, (result) => {
             ShowResults(result);
         }, (error) => {
@@ -61,17 +63,13 @@ public class CameraManager : MonoBehaviour
 
     private void DisplayImagePreview(byte[] bytes)
     {
-        // Cleanup old texture to save memory
         if (previewDisplay.texture != null) Destroy(previewDisplay.texture);
-
         Texture2D tex = new Texture2D(2, 2);
         if (tex.LoadImage(bytes)) 
         {
             previewDisplay.texture = tex;
             if (previewDisplay.TryGetComponent<AspectRatioFitter>(out var fitter))
-            {
                 fitter.aspectRatio = (float)tex.width / tex.height;
-            }
         }
     }
 
@@ -82,13 +80,12 @@ public class CameraManager : MonoBehaviour
 
         if (result != null)
         {
-            string itemsList = (result.animalItems != null && result.animalItems.Length > 0) 
-                ? string.Join(", ", result.animalItems) 
-                : "None detected";
-
-            resultText.text = $"<b>Verdict:</b> {(result.containsAnimalProducts ? "<color=red>Animal Products Found</color>" : "<color=green>No Animal Products</color>")}\n\n" +
-                              $"<b>Items:</b> {itemsList}\n" +
+            string items = (result.animalItems != null) ? string.Join(", ", result.animalItems) : "None";
+            resultText.text = $"<b>Verdict:</b> {(result.containsAnimalProducts ? "<color=red>Non-Vegan</color>" : "<color=green>Vegan</color>")}\n" +
+                              $"<b>Items:</b> {items}\n" +
                               $"<b>Est. Animals:</b> {result.estimatedAnimalCount}";
         }
+
+        UIManager.instance.SetTimeSpentText();
     }
 }

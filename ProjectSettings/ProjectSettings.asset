@@ -520,8 +520,7 @@ PlayerSettings:
   enableInternalProfiler: 0
   logObjCUncaughtExceptions: 1
   enableCrashReportAPI: 0
-  cameraUsageDescription: This app uses the camera to scan food items for animal
-    products.
+  cameraUsageDescription: This app uses the camera to scan items for animal products.
   locationUsageDescription: 
   microphoneUsageDescription: 
   bluetoothUsageDescription: 
