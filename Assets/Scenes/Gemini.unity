@@ -230,10 +230,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 208912253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.13332711, y: 0.9016401}
-  m_AnchorMax: {x: 0.8718848, y: 0.9411599}
-  m_AnchoredPosition: {x: -2.9760132, y: 1.0222168}
-  m_SizeDelta: {x: -2.3600006, y: -1.2769775}
+  m_AnchorMin: {x: 0.0716729, y: 0.9138395}
+  m_AnchorMax: {x: 0.8695484, y: 0.9411599}
+  m_AnchoredPosition: {x: -0.4920044, y: 1.2282715}
+  m_SizeDelta: {x: -1.3270001, y: -1.6893997}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &271108622
 MonoBehaviour:
@@ -282,7 +282,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 72
+  m_fontSize: 66.4
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -505,6 +505,7 @@ MonoBehaviour:
   resultsPanel: {fileID: 208912252}
   resultText: {fileID: 845502206}
   previewDisplay: {fileID: 512315196}
+  bypassAICall: 1
 --- !u!4 &343874620
 Transform:
   m_ObjectHideFlags: 0
@@ -552,10 +553,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 208912253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.13332711, y: 0.43123978}
-  m_AnchorMax: {x: 0.8718848, y: 0.89000005}
-  m_AnchoredPosition: {x: -3.2219849, y: -5.019043}
-  m_SizeDelta: {x: -2.856598, y: 1.009491}
+  m_AnchorMin: {x: 0.0716729, y: 0.5}
+  m_AnchorMax: {x: 0.92800003, y: 0.9035191}
+  m_AnchoredPosition: {x: -0.14178467, y: -1.6920166}
+  m_SizeDelta: {x: -0.2830699, y: -3.3839989}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &512315196
 MonoBehaviour:
@@ -778,10 +779,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 208912253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.0716729, y: 0.1473607}
-  m_AnchorMax: {x: 0.93256706, y: 0.39268032}
-  m_AnchoredPosition: {x: -2.949707, y: 1.5467529}
-  m_SizeDelta: {x: -6.5709, y: -17.2328}
+  m_AnchorMin: {x: 0.0716729, y: 0.020000001}
+  m_AnchorMax: {x: 0.665, y: 0.4876783}
+  m_AnchoredPosition: {x: 0.15710449, y: 0.45568848}
+  m_SizeDelta: {x: -0.35570145, y: -6.9477997}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &845502206
 MonoBehaviour:
@@ -1721,9 +1722,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'BACK
+  m_text: 'SCAN
 
-'
+    AGAIN'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1836,10 +1837,10 @@ RectTransform:
   - {fileID: 1340231870}
   m_Father: {fileID: 208912253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.26988474, y: 0.077600434}
-  m_AnchorMax: {x: 0.7301153, y: 0.15384018}
-  m_AnchoredPosition: {x: 0, y: -4.800049}
-  m_SizeDelta: {x: 8.573486, y: -5.339966}
+  m_AnchorMin: {x: 0.665, y: 0.022519799}
+  m_AnchorMax: {x: 0.94523066, y: 0.095000006}
+  m_AnchoredPosition: {x: -0.07400513, y: -1.8100586}
+  m_SizeDelta: {x: -0.2586975, y: 2.3300018}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1490537413
 MonoBehaviour:
@@ -1976,7 +1977,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18f6a90cc99474b318f0bd7bd5c79147, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeminiClient
-  apiKey: AIzaSyBOEqbVfnYHKx5KAgzL9_dt5n-ZgrZGOvY
+  apiKey: 
   modelId: gemini-2.5-flash
   customPrompt: 'Analyze the image.
 
@@ -2001,7 +2002,7 @@ MonoBehaviour:
     Return a JSON object
     with these identifications'
   enableDebugLogging: 1
-  logFullApiResponse: 0
+  logFullApiResponse: 1
   validateApiKeyOnStart: 1
 --- !u!4 &1927830486
 Transform:
