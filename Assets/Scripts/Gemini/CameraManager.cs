@@ -36,12 +36,18 @@ public class CameraManager : MonoBehaviour
         NativeGallery.GetImageFromGallery((path) =>
         {
             if (path != null) ProcessImage(path);
-        }, title: "Select a Food Image", mime: "image/*");
+        }, title: "Select an Image", mime: "image/*");
 #endif
     }
 
     private void ProcessImage(string path)
     {
+        if (geminiClient == null)
+        {
+            Debug.LogError("[CameraManager] GeminiClient is not assigned!");
+            return;
+        }
+
         initialPanel.SetActive(false);
         loadingPanel.SetActive(true);
 
@@ -51,29 +57,57 @@ public class CameraManager : MonoBehaviour
         
         if (pickedTex != null)
         {
-            if (previewDisplay.texture != null) Destroy(previewDisplay.texture);
-            previewDisplay.texture = pickedTex;
+            // Clean up previous texture
+            if (previewDisplay != null && previewDisplay.texture != null)
+            {
+                Destroy(previewDisplay.texture);
+            }
             
-            if (previewDisplay.TryGetComponent<AspectRatioFitter>(out var fitter))
-                fitter.aspectRatio = (float)pickedTex.width / pickedTex.height;
+            if (previewDisplay != null)
+            {
+                previewDisplay.texture = pickedTex;
+                
+                if (previewDisplay.TryGetComponent<AspectRatioFitter>(out var fitter))
+                    fitter.aspectRatio = (float)pickedTex.width / pickedTex.height;
+            }
 
             // 2. Convert the loaded texture to bytes for Gemini
             // This is safer than File.ReadAllBytes(path) for iOS gallery files
             byte[] imageBytes = pickedTex.EncodeToJPG();
+            
+            if (imageBytes == null || imageBytes.Length == 0)
+            {
+                Debug.LogError("[CameraManager] Failed to encode image to JPG");
+                loadingPanel.SetActive(false);
+                initialPanel.SetActive(true);
+                if (resultText != null)
+                {
+                    resultText.text = "Error: Failed to process image. Please try again.";
+                }
+                return;
+            }
 
             StartCoroutine(geminiClient.AnalyzeImage(imageBytes, (result) => {
                 ShowResults(result);
             }, (error) => {
                 loadingPanel.SetActive(false);
                 initialPanel.SetActive(true);
-                resultText.text = error;
+                if (resultText != null)
+                {
+                    resultText.text = $"<color=#FF5555><b>Error:</b></color>\n{error}";
+                }
+                Debug.LogError($"[CameraManager] Analysis failed: {error}");
             }));
         }
         else
         {
-            Debug.LogError("Failed to load image at path: " + path);
+            Debug.LogError($"[CameraManager] Failed to load image at path: {path}");
             loadingPanel.SetActive(false);
             initialPanel.SetActive(true);
+            if (resultText != null)
+            {
+                resultText.text = "Error: Could not load the selected image. Please try another image.";
+            }
         }
     }
 
@@ -82,15 +116,74 @@ public class CameraManager : MonoBehaviour
         loadingPanel.SetActive(false);
         resultsPanel.SetActive(true);
 
-        if (result != null)
+        if (result != null && result.items != null && result.items.Length > 0)
         {
-            string items = (result.animalItems != null) ? string.Join(", ", result.animalItems) : "None";
-            string verdictColor = result.containsAnimalProducts ? "#FF5555" : "#55FF55";
-            string verdictText = result.containsAnimalProducts ? "NON-VEGAN" : "VEGAN / CLEAN";
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            
+            // Determine overall verdict
+            bool hasAnimalProducts = result.ContainsAnimalProducts;
+            string verdictColor = hasAnimalProducts ? "#FF5555" : "#55FF55";
+            string verdictText = hasAnimalProducts ? "NON-VEGAN" : "VEGAN / CLEAN";
+            
+            sb.AppendLine($"<b>Overall Verdict:</b> <color={verdictColor}>{verdictText}</color>");
+            sb.AppendLine($"<b>Items Found:</b> {result.TotalItems}");
+            sb.AppendLine($"<b>Total Estimated Animals:</b> {result.TotalEstimatedAnimalCount:F2}");
+            sb.AppendLine();
 
-            resultText.text = $"<b>Verdict:</b> <color={verdictColor}>{verdictText}</color>\n\n" +
-                              $"<b>Items:</b> {items}\n" +
-                              $"<b>Est. Animals:</b> {result.estimatedAnimalCount}";
+            // Display each item's details
+            for (int i = 0; i < result.items.Length; i++)
+            {
+                var item = result.items[i];
+                if (item == null) continue;
+
+                sb.AppendLine($"<b>━━━ Item {i + 1}: {item.itemName ?? "Unknown"} ━━━</b>");
+                
+                // Animal-derived materials
+                if (item.animalDerivedMaterials != null && item.animalDerivedMaterials.Length > 0)
+                {
+                    sb.AppendLine($"<b>Materials:</b> {string.Join(", ", item.animalDerivedMaterials)}");
+                }
+                else
+                {
+                    sb.AppendLine($"<b>Materials:</b> <color=#55FF55>No animal-derived materials detected</color>");
+                }
+
+                // Animal species
+                if (item.animalSpecies != null && item.animalSpecies.Length > 0)
+                {
+                    sb.AppendLine($"<b>Species:</b> {string.Join(", ", item.animalSpecies)}");
+                }
+
+                // Animal count
+                if (item.estimatedAnimalCount > 0)
+                {
+                    sb.AppendLine($"<b>Animals Used:</b> {item.estimatedAnimalCount:F2}");
+                }
+
+                // Confidence
+                string confidenceColor = item.confidence?.ToLower() switch
+                {
+                    "high" => "#55FF55",
+                    "medium" => "#FFAA55",
+                    "low" => "#FF5555",
+                    _ => "#AAAAAA"
+                };
+                sb.AppendLine($"<b>Confidence:</b> <color={confidenceColor}>{item.confidence?.ToUpper() ?? "UNKNOWN"}</color>");
+                
+                if (i < result.items.Length - 1)
+                {
+                    sb.AppendLine();
+                }
+            }
+            
+            resultText.text = sb.ToString();
+        }
+        else
+        {
+            // No items found or result is null
+            resultText.text = "<b>Analysis Complete</b>\n\n" +
+                             "<color=#55FF55>No clothing or footwear items detected in the image.</color>\n\n" +
+                             "Please try scanning an image with visible clothing or footwear items.";
         }
 
         if(UIManager.instance != null)

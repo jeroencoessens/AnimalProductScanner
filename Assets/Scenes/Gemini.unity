@@ -552,10 +552,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 208912253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.05142367, y: 0.40820017}
-  m_AnchorMax: {x: 0.9434705, y: 0.98200005}
-  m_AnchoredPosition: {x: 3.2780151, y: -117}
-  m_SizeDelta: {x: -199.8566, y: -287.0287}
+  m_AnchorMin: {x: 0.13332711, y: 0.43123978}
+  m_AnchorMax: {x: 0.8718848, y: 0.89000005}
+  m_AnchoredPosition: {x: -3.2219849, y: -5.019043}
+  m_SizeDelta: {x: -2.856598, y: 1.009491}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &512315196
 MonoBehaviour:
@@ -1281,10 +1281,10 @@ RectTransform:
   - {fileID: 339331769}
   m_Father: {fileID: 804013067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.26788476, y: 0.07860044}
-  m_AnchorMax: {x: 0.7351153, y: 0.15112022}
-  m_AnchoredPosition: {x: -2, y: -1.7385254}
-  m_SizeDelta: {x: -1.4265, y: 4.7556}
+  m_AnchorMin: {x: 0.19310594, y: 0.07680058}
+  m_AnchorMax: {x: 0.8168941, y: 0.14940031}
+  m_AnchoredPosition: {x: -6.5, y: 3.2614746}
+  m_SizeDelta: {x: -1.5236969, y: 4.7556}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1224939324
 MonoBehaviour:
@@ -1565,10 +1565,10 @@ RectTransform:
   - {fileID: 2013592040}
   m_Father: {fileID: 804013067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.26788476, y: 0.16983946}
-  m_AnchorMax: {x: 0.7351153, y: 0.2451188}
-  m_AnchoredPosition: {x: -2, y: -1}
-  m_SizeDelta: {x: -1.4265, y: -3.2443848}
+  m_AnchorMin: {x: 0.19310594, y: 0.16979986}
+  m_AnchorMax: {x: 0.8168941, y: 0.2451188}
+  m_AnchoredPosition: {x: -6.5, y: -1}
+  m_SizeDelta: {x: -1.5236969, y: -3.2444}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1241654337
 MonoBehaviour:
@@ -1976,7 +1976,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18f6a90cc99474b318f0bd7bd5c79147, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeminiClient
-  apiKey: AIzaSyCRxqgcG3bM5k80h6TV1sw8Q_lCuUIq6pY
+  apiKey: AIzaSyBOEqbVfnYHKx5KAgzL9_dt5n-ZgrZGOvY
   modelId: gemini-2.5-flash
   customPrompt: 'Analyze the image.
 
@@ -2000,6 +2000,9 @@ MonoBehaviour:
 
     Return a JSON object
     with these identifications'
+  enableDebugLogging: 1
+  logFullApiResponse: 0
+  validateApiKeyOnStart: 1
 --- !u!4 &1927830486
 Transform:
   m_ObjectHideFlags: 0
