@@ -28,13 +28,16 @@ public class CameraManager : MonoBehaviour
     [Tooltip("When true, user will be prompted to add context before analysis.")]
     public bool provideMoreContext = false;
 
+    [Header("Arrows")]
+    public GameObject arrowsObject;
+
+
     [Header("Debug Options")]
     [Tooltip("When enabled, bypasses the AI call and shows 'UI test' in results. Useful for testing UI flow without API calls.")]
     public bool bypassAICall = false;
     public GameObject aiCallCheckmark;
+    public int FPS = 60;
 
-    [Header("Arrows")]
-    public GameObject arrowsObject;
 
     // Pending image data when waiting for context input
     private byte[] pendingImageBytes;
@@ -42,6 +45,11 @@ public class CameraManager : MonoBehaviour
     private float previewMaxWidth;
     private float previewMaxHeight;
     private bool previewBoundsInitialized;
+
+    void Awake()
+    {
+        Application.targetFrameRate = FPS;
+    }
 
     private void CachePreviewBounds()
     {

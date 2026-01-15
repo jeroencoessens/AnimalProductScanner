@@ -648,9 +648,10 @@ MonoBehaviour:
   contextPanel: {fileID: 1080818581}
   contextInputField: {fileID: 872292192}
   provideMoreContext: 1
+  arrowsObject: {fileID: 593410086}
   bypassAICall: 0
   aiCallCheckmark: {fileID: 648934474}
-  arrowsObject: {fileID: 593410086}
+  FPS: 60
 --- !u!4 &343874620
 Transform:
   m_ObjectHideFlags: 0
