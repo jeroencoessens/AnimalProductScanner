@@ -30,6 +30,7 @@ public class GeminiClient : MonoBehaviour
         public string[] animalSpecies;
         public float estimatedAnimalCount; // Using float to support fractions
         public string confidence; // "low", "medium", "high"
+        public string specificMethodOfCreation; // "wild caught", "farm raised", "other"
     }
 
     [Serializable]
@@ -210,7 +211,8 @@ public class GeminiClient : MonoBehaviour
                                     ""animalDerivedMaterials"": {""type"": ""ARRAY"", ""items"": {""type"": ""STRING""}},
                                     ""animalSpecies"": {""type"": ""ARRAY"", ""items"": {""type"": ""STRING""}},
                                     ""estimatedAnimalCount"": {""type"": ""NUMBER""},
-                                    ""confidence"": {""type"": ""STRING""}
+                                    ""confidence"": {""type"": ""STRING""},
+                                    ""specificMethodOfCreation"": {""type"": ""STRING""}
                                 },
                                 ""required"": [""itemName"", ""confidence""]
                             }

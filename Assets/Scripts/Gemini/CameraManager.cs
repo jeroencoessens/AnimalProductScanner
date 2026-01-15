@@ -33,6 +33,9 @@ public class CameraManager : MonoBehaviour
     public bool bypassAICall = false;
     public GameObject aiCallCheckmark;
 
+    [Header("Arrows")]
+    public GameObject arrowsObject;
+
     // Pending image data when waiting for context input
     private byte[] pendingImageBytes;
 
@@ -319,83 +322,129 @@ public class CameraManager : MonoBehaviour
         contextRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, finalHeight);
     }
 
+    private int currentItemIndex = 0;
+    private GeminiClient.PredictionResult geminiResult;
+
     private void ShowResults(GeminiClient.PredictionResult result)
     {
         loadingPanel.SetActive(false);
         resultsPanel.SetActive(true);
+        geminiResult = result;
 
-        if (result != null && result.items != null && result.items.Length > 0)
+        if (geminiResult != null && geminiResult.items != null && geminiResult.items.Length > 0)
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            
-            // Determine overall verdict
-            bool hasAnimalProducts = result.ContainsAnimalProducts;
-            string verdictColor = hasAnimalProducts ? "#FF5555" : "#55FF55";
-            string verdictText = hasAnimalProducts ? "NON-VEGAN" : "VEGAN / CLEAN";
-            
-            sb.AppendLine($"<b>Overall Verdict:</b> <color={verdictColor}>{verdictText}</color>");
-            sb.AppendLine($"<b>Items Found:</b> {result.TotalItems}");
-            sb.AppendLine($"<b>Total Estimated Animals:</b> {result.TotalEstimatedAnimalCount:F2}");
-            sb.AppendLine();
-
-            // Display each item's details
-            for (int i = 0; i < result.items.Length; i++)
-            {
-                var item = result.items[i];
-                if (item == null) continue;
-
-                sb.AppendLine($"<b>━━━ Item {i + 1}: {item.itemName ?? "Unknown"} ━━━</b>");
-                
-                // Animal-derived materials
-                if (item.animalDerivedMaterials != null && item.animalDerivedMaterials.Length > 0)
-                {
-                    sb.AppendLine($"<b>Materials:</b> {string.Join(", ", item.animalDerivedMaterials)}");
-                }
-                else
-                {
-                    sb.AppendLine($"<b>Materials:</b> <color=#55FF55>No animal-derived materials detected</color>");
-                }
-
-                // Animal species
-                if (item.animalSpecies != null && item.animalSpecies.Length > 0)
-                {
-                    sb.AppendLine($"<b>Species:</b> {string.Join(", ", item.animalSpecies)}");
-                }
-
-                // Animal count
-                if (item.estimatedAnimalCount > 0)
-                {
-                    sb.AppendLine($"<b>Animals Used:</b> {item.estimatedAnimalCount:F2}");
-                }
-
-                // Confidence
-                string confidenceColor = item.confidence?.ToLower() switch
-                {
-                    "high" => "#55FF55",
-                    "medium" => "#FFAA55",
-                    "low" => "#FF5555",
-                    _ => "#AAAAAA"
-                };
-                sb.AppendLine($"<b>Confidence:</b> <color={confidenceColor}>{item.confidence?.ToUpper() ?? "UNKNOWN"}</color>");
-                
-                if (i < result.items.Length - 1)
-                {
-                    sb.AppendLine();
-                }
-            }
-            
-            resultText.text = sb.ToString();
+            currentItemIndex = 0;
+            ShowItem(currentItemIndex);
         }
         else
         {
             // No items found or result is null
             resultText.text = "<b>Analysis Complete</b>\n\n" +
-                             "<color=#55FF55>No clothing or footwear items detected in the image.</color>\n\n" +
-                             "Please try scanning an image with visible clothing or footwear items.";
+                             "<color=#55FF55>Error while scanning the image.</color>\n\n" +
+                             "Please try again.";
         }
 
         if(UIManager.instance != null)
             UIManager.instance.SetTimeSpentText();
+    }
+
+    public void OnNextItemClick()
+    {
+        Debug.Log("Next item clicked");
+        if(currentItemIndex < geminiResult.items.Length - 1)
+        {
+            currentItemIndex++;
+            ShowItem(currentItemIndex);
+        }
+        else
+        {
+            Debug.Log("No more items");
+        }
+    }
+
+    public void OnPreviousItemClick()
+    {
+        Debug.Log("Previous item clicked");
+        if(currentItemIndex > 0)
+        {
+            currentItemIndex--;
+            ShowItem(currentItemIndex);
+        }
+        else
+        {
+            Debug.Log("No previous items");
+        }
+    }
+
+    private void ShowItem(int index)
+    {
+        Debug.Log("Showing item " + index);
+        
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        bool hasMoreThanOneItem = geminiResult.TotalItems > 1;
+        arrowsObject.SetActive(hasMoreThanOneItem);
+        if(hasMoreThanOneItem)
+        {
+            sb.AppendLine($"<b>{geminiResult.TotalItems} items in image, use the arrows to navigate results.</b>");
+            sb.AppendLine($"<b>Total Estimated Animals:</b> {geminiResult.TotalEstimatedAnimalCount:F2}");
+            sb.AppendLine();
+        }
+        
+        var item = geminiResult.items[index];
+        if (item == null) 
+        {
+            Debug.Log("Item is null");
+            return;
+        }
+
+        sb.AppendLine($"<b>--- Item {index + 1}: {item.itemName ?? "Unknown"} ---</b>");
+        
+        // Animal-derived materials
+        if (item.animalDerivedMaterials != null && item.animalDerivedMaterials.Length > 0)
+        {
+            sb.AppendLine($"<b>Materials:</b> {string.Join(", ", item.animalDerivedMaterials)}");
+        }
+        else
+        {
+            sb.AppendLine($"<b>Materials:</b> <color=#55FF55>No animal-derived materials detected</color>");
+        }
+
+        // Animal species
+        if (item.animalSpecies != null && item.animalSpecies.Length > 0)
+        {
+            sb.AppendLine($"<b>Species:</b> {string.Join(", ", item.animalSpecies)}");
+        }
+
+        // Animal count
+        if (item.estimatedAnimalCount > 0)
+        {
+            sb.AppendLine($"<b>Animals Used:</b> {item.estimatedAnimalCount:F2}");
+        }
+
+        // Confidence
+        string confidenceColor = item.confidence?.ToLower() switch
+        {
+            "high" => "#55FF55",
+            "medium" => "#FFAA55",
+            "low" => "#FF5555",
+            _ => "#AAAAAA"
+        };
+        sb.AppendLine($"<b>Confidence:</b> <color={confidenceColor}>{item.confidence?.ToUpper() ?? "UNKNOWN"}</color>");
+
+        // Animal species
+        sb.AppendLine();
+        if (item.specificMethodOfCreation != null && item.specificMethodOfCreation.Length > 0)
+        {
+            sb.AppendLine($"<b>How is it made:</b> {string.Join(", ", item.specificMethodOfCreation)}");
+        }
+        
+         resultText.text = sb.ToString();
+    }
+
+    public void OnMoreInfoClicked()
+    {
+        Debug.Log("More info clicked");
     }
 
     public void OnToggleDebugBypassAICall()
