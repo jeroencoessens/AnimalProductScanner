@@ -14,9 +14,27 @@ public class CameraManager : MonoBehaviour
     public TextMeshProUGUI resultText;
     public RawImage previewDisplay;
 
+
+    [Header("Context Mode")]
+    public RawImage contextPreviewDisplay;
+    public GameObject contextCheckmark;
+
+    [Tooltip("Assign the panel that contains the context input field and confirm button.")]
+    public GameObject contextPanel;
+
+    [Tooltip("Assign the TMP InputField where users type additional context.")]
+    public TMP_InputField contextInputField;
+
+    [Tooltip("When true, user will be prompted to add context before analysis.")]
+    public bool provideMoreContext = false;
+
     [Header("Debug Options")]
     [Tooltip("When enabled, bypasses the AI call and shows 'UI test' in results. Useful for testing UI flow without API calls.")]
     public bool bypassAICall = false;
+    public GameObject aiCallCheckmark;
+
+    // Pending image data when waiting for context input
+    private byte[] pendingImageBytes;
 
     private float previewMaxWidth;
     private float previewMaxHeight;
@@ -33,7 +51,6 @@ public class CameraManager : MonoBehaviour
 
         previewBoundsInitialized = true;
     }
-
 
     public void OnTakeClick()
     {
@@ -61,30 +78,6 @@ public class CameraManager : MonoBehaviour
 #endif
     }
 
-    private void FitTextureInsideRawImage(Texture2D tex)
-    {
-        if (previewDisplay == null || tex == null)
-            return;
-
-        CachePreviewBounds();
-
-        RectTransform rt = previewDisplay.rectTransform;
-
-        float imageWidth = tex.width;
-        float imageHeight = tex.height;
-
-        float scale = Mathf.Min(
-            previewMaxWidth / imageWidth,
-            previewMaxHeight / imageHeight
-        );
-
-        float finalWidth = imageWidth * scale;
-        float finalHeight = imageHeight * scale;
-
-        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, finalWidth);
-        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, finalHeight);
-    }
-
     private bool IsUsageLimitError(string errorMessage)
     {
         if (string.IsNullOrEmpty(errorMessage))
@@ -99,6 +92,105 @@ public class CameraManager : MonoBehaviour
                errorLower.Contains("exceeded") && (errorLower.Contains("billing") || errorLower.Contains("quota")) ||
                errorLower.Contains("resource exhausted") ||
                errorMessage.Contains("429"); // Response code 429 is rate limit/quota exceeded
+    }
+
+    #region Context Mode UI Endpoints
+
+    /// <summary>
+    /// Toggle the "Provide More Context" mode. Hook this up to your toggle/checkbox button's OnClick event.
+    /// </summary>
+    public void OnToggleProvideMoreContext()
+    {
+        provideMoreContext = !provideMoreContext;
+        Debug.Log($"[CameraManager] Provide More Context mode: {(provideMoreContext ? "ON" : "OFF")}");
+        contextCheckmark.SetActive(provideMoreContext);
+    }
+
+    /// <summary>
+    /// Called when user presses "Check with Context" button in the context panel.
+    /// Takes the text from the input field and sends it along with the pending image to Gemini.
+    /// </summary>
+    public void OnContextConfirmClick()
+    {
+        if (pendingImageBytes == null || pendingImageBytes.Length == 0)
+        {
+            Debug.LogError("[CameraManager] No pending image to analyze!");
+            if (contextPanel != null) contextPanel.SetActive(false);
+            initialPanel.SetActive(true);
+            return;
+        }
+
+        string userContext = "";
+        if (contextInputField != null)
+        {
+            userContext = contextInputField.text;
+        }
+
+        if (contextPanel != null) contextPanel.SetActive(false);
+        loadingPanel.SetActive(true);
+
+        StartAnalysis(pendingImageBytes, userContext);
+        pendingImageBytes = null; // Clear pending data
+    }
+
+    /// <summary>
+    /// Called when user wants to cancel context input and go back to initial screen.
+    /// </summary>
+    public void OnContextCancelClick()
+    {
+        Debug.Log("[CameraManager] Context input cancelled.");
+        pendingImageBytes = null;
+        if (contextPanel != null) contextPanel.SetActive(false);
+        initialPanel.SetActive(true);
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Starts the Gemini analysis with optional user context appended to the prompt.
+    /// </summary>
+    private void StartAnalysis(byte[] imageBytes, string userContext)
+    {
+        string promptOverride = null;
+
+        // If user provided context, append it to the base prompt
+        if (!string.IsNullOrWhiteSpace(userContext))
+        {
+            promptOverride = geminiClient.customPrompt + "\n\nAdditional context from user: " + userContext;
+            Debug.Log($"[CameraManager] Analyzing with user context: {userContext}");
+        }
+
+        StartCoroutine(geminiClient.AnalyzeImage(imageBytes, (result) => {
+            ShowResults(result);
+        }, (error) => {
+            // Check if this is a usage/quota limit error
+            bool isUsageLimitError = IsUsageLimitError(error);
+            
+            if (isUsageLimitError)
+            {
+                // Show the image in results panel with usage limit message
+                Debug.LogWarning("[CameraManager] API usage limit exceeded. Showing image with error message.");
+                loadingPanel.SetActive(false);
+                resultsPanel.SetActive(true);
+                if (resultText != null)
+                {
+                    resultText.text = "AI usage limit exceeded, try again later.";
+                }
+                if (UIManager.instance != null)
+                    UIManager.instance.SetTimeSpentText();
+            }
+            else
+            {
+                // Regular error handling - return to initial panel
+                loadingPanel.SetActive(false);
+                initialPanel.SetActive(true);
+                if (resultText != null)
+                {
+                    resultText.text = $"<color=#FF5555><b>Error:</b></color>\n{error}";
+                }
+                Debug.LogError($"[CameraManager] Analysis failed: {error}");
+            }
+        }, promptOverride));
     }
 
     private void ProcessImage(string path)
@@ -124,9 +216,10 @@ public class CameraManager : MonoBehaviour
                 Destroy(previewDisplay.texture);
             }
             
-            if (previewDisplay != null)
+            if (previewDisplay != null && contextPreviewDisplay != null)
             {
                 previewDisplay.texture = pickedTex;
+                contextPreviewDisplay.texture = pickedTex;
                 FitTextureInsideRawImage(pickedTex);
             }
 
@@ -161,37 +254,31 @@ public class CameraManager : MonoBehaviour
                 return;
             }
 
-            StartCoroutine(geminiClient.AnalyzeImage(imageBytes, (result) => {
-                ShowResults(result);
-            }, (error) => {
-                // Check if this is a usage/quota limit error
-                bool isUsageLimitError = IsUsageLimitError(error);
+            // Context mode: show context panel instead of immediately analyzing
+            if (provideMoreContext)
+            {
+                Debug.Log("[CameraManager] Context mode enabled. Showing context panel.");
+                pendingImageBytes = imageBytes;
+                loadingPanel.SetActive(false);
                 
-                if (isUsageLimitError)
+                if (contextPanel != null)
                 {
-                    // Show the image in results panel with usage limit message
-                    Debug.LogWarning("[CameraManager] API usage limit exceeded. Showing image with error message.");
-                    loadingPanel.SetActive(false);
-                    resultsPanel.SetActive(true);
-                    if (resultText != null)
+                    contextPanel.SetActive(true);
+                    // Clear any previous context text
+                    if (contextInputField != null)
                     {
-                        resultText.text = "AI usage limit exceeded, try again later.";
+                        contextInputField.text = "";
                     }
-                    if (UIManager.instance != null)
-                        UIManager.instance.SetTimeSpentText();
                 }
                 else
                 {
-                    // Regular error handling - return to initial panel
-                    loadingPanel.SetActive(false);
-                    initialPanel.SetActive(true);
-                    if (resultText != null)
-                    {
-                        resultText.text = $"<color=#FF5555><b>Error:</b></color>\n{error}";
-                    }
-                    Debug.LogError($"[CameraManager] Analysis failed: {error}");
+                    Debug.LogWarning("[CameraManager] Context panel not assigned! Proceeding without context.");
+                    StartAnalysis(imageBytes, null);
                 }
-            }));
+                return;
+            }
+
+            StartAnalysis(imageBytes, null);
         }
         else
         {
@@ -203,6 +290,33 @@ public class CameraManager : MonoBehaviour
                 resultText.text = "Error: Could not load the selected image. Please try another image.";
             }
         }
+    }
+
+    private void FitTextureInsideRawImage(Texture2D tex)
+    {
+        if (previewDisplay == null || tex == null)
+            return;
+
+        CachePreviewBounds();
+
+        RectTransform rt = previewDisplay.rectTransform;
+        RectTransform contextRt = contextPreviewDisplay.rectTransform;
+
+        float imageWidth = tex.width;
+        float imageHeight = tex.height;
+
+        float scale = Mathf.Min(
+            previewMaxWidth / imageWidth,
+            previewMaxHeight / imageHeight
+        );
+
+        float finalWidth = imageWidth * scale;
+        float finalHeight = imageHeight * scale;
+
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, finalWidth);
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, finalHeight);
+        contextRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, finalWidth);
+        contextRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, finalHeight);
     }
 
     private void ShowResults(GeminiClient.PredictionResult result)
@@ -282,5 +396,12 @@ public class CameraManager : MonoBehaviour
 
         if(UIManager.instance != null)
             UIManager.instance.SetTimeSpentText();
+    }
+
+    public void OnToggleDebugBypassAICall()
+    {
+        bypassAICall = !bypassAICall;
+        Debug.Log($"AI call bypass: {(bypassAICall ? "ON" : "OFF")}");
+        aiCallCheckmark.SetActive(bypassAICall);
     }
 }

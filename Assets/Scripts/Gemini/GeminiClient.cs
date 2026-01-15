@@ -160,7 +160,7 @@ public class GeminiClient : MonoBehaviour
         }
     }
 
-    public IEnumerator AnalyzeImage(byte[] imageBytes, Action<PredictionResult> onParsedResult, Action<string> onError)
+    public IEnumerator AnalyzeImage(byte[] imageBytes, Action<PredictionResult> onParsedResult, Action<string> onError, string promptOverride = null)
     {
         // Validate API key
         if (string.IsNullOrEmpty(apiKey) || apiKey == "YOUR_API_KEY_HERE")
@@ -186,11 +186,13 @@ public class GeminiClient : MonoBehaviour
             Debug.Log($"[GeminiClient] Starting analysis - Model: {modelId}, Image size: {imageBytes.Length} bytes ({imageBytes.Length / 1024f:F2} KB)");
         }
 
+        string promptToUse = string.IsNullOrWhiteSpace(promptOverride) ? customPrompt : promptOverride;
+
         // GenerationConfig forces the model to be a robot and return JSON
         string jsonPayload = @"{
             ""contents"": [{
                 ""parts"": [
-                    {""text"": """ + customPrompt + @"""},
+                    {""text"": """ + promptToUse + @"""},
                     {""inline_data"": {""mime_type"": ""image/jpeg"", ""data"": """ + base64Image + @"""}}
                 ]
             }],
