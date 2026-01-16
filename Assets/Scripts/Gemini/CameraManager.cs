@@ -31,6 +31,10 @@ public class CameraManager : MonoBehaviour
     [Header("Arrows")]
     public GameObject arrowsObject;
 
+    [Header("Colors")]
+    public Color animalDerivedMaterialsColor = new Color(1, 0, 0);
+    public Color headerColor = new Color(0, 1, 0);
+
 
     [Header("Debug Options")]
     [Tooltip("When enabled, bypasses the AI call and shows 'UI test' in results. Useful for testing UI flow without API calls.")]
@@ -258,7 +262,11 @@ public class CameraManager : MonoBehaviour
                 resultsPanel.SetActive(true);
                 if (resultText != null)
                 {
-                    resultText.text = "UI test";
+                    resultText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(headerColor)}>UI test</color>";
+                    resultText.text += "\nTotal Estimated Animals: 100";
+                    resultText.text += $"\n\nMaterials: <color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Animal Derived Materials</color>";
+                    resultText.text += "\nSome text to fill the space, I have no idea what to write here.";
+
                 }
                 if (UIManager.instance != null)
                     UIManager.instance.SetTimeSpentText();
@@ -394,8 +402,8 @@ public class CameraManager : MonoBehaviour
         arrowsObject.SetActive(hasMoreThanOneItem);
         if(hasMoreThanOneItem)
         {
-            sb.AppendLine($"<b>{geminiResult.TotalItems} items in image, use the arrows to navigate results.</b>");
-            sb.AppendLine($"<b>Total Estimated Animals:</b> {geminiResult.TotalEstimatedAnimalCount:F2}");
+            sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(headerColor)}>{geminiResult.TotalItems} items in image, use the arrows to navigate results.</color></b>");
+            sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(headerColor)}>Total Estimated Animals:</color></b> {geminiResult.TotalEstimatedAnimalCount:F2}");
             sb.AppendLine();
         }
         
@@ -411,7 +419,7 @@ public class CameraManager : MonoBehaviour
         // Animal-derived materials
         if (item.animalDerivedMaterials != null && item.animalDerivedMaterials.Length > 0)
         {
-            sb.AppendLine($"<b>Materials:</b> {string.Join(", ", item.animalDerivedMaterials)}");
+            sb.AppendLine($"<b>Materials:</b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}> {string.Join(", ", item.animalDerivedMaterials)}</color>");
         }
         else
         {
@@ -444,7 +452,7 @@ public class CameraManager : MonoBehaviour
         sb.AppendLine();
         if (item.specificMethodOfCreation != null && item.specificMethodOfCreation.Length > 0)
         {
-            sb.AppendLine($"<b>How is it made:</b> {string.Join(", ", item.specificMethodOfCreation)}");
+            sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>How is it made:</color></b> {string.Join(", ", item.specificMethodOfCreation)}");
         }
         
          resultText.text = sb.ToString();
