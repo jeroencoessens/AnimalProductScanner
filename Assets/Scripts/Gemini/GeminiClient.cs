@@ -544,7 +544,7 @@ public class GeminiClient : MonoBehaviour
         while (index < messages.Length)
         {
             UpdateStatus(messages[index]);
-            index = (index + 1) % messages.Length;
+            index++;
             yield return new WaitForSeconds(2f);
         }
     }

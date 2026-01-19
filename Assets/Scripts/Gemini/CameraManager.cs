@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using TMPro;
+using System;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -72,6 +73,10 @@ public class CameraManager : MonoBehaviour
 #if UNITY_EDITOR
         string path = EditorUtility.OpenFilePanel("Select Image", "", "jpg,png,jpeg");
         if (!string.IsNullOrEmpty(path)) ProcessImage(path);
+#elif UNITY_WEBGL
+        WebGLFilePicker.Instance.PickImage((base64) => {
+            ProcessBase64Image(base64);
+        });
 #else
         if (NativeCamera.IsCameraBusy()) return;
         NativeCamera.TakePicture((path) => {
@@ -84,6 +89,10 @@ public class CameraManager : MonoBehaviour
     {
 #if UNITY_EDITOR
         OnTakeClick(); 
+#elif UNITY_WEBGL
+        WebGLFilePicker.Instance.PickImage((base64) => {
+            ProcessBase64Image(base64);
+        });
 #else
         if (NativeGallery.IsMediaPickerBusy()) return;
         NativeGallery.GetImageFromGallery((path) =>
@@ -206,6 +215,104 @@ public class CameraManager : MonoBehaviour
                 Debug.LogError($"[CameraManager] Analysis failed: {error}");
             }
         }, promptOverride));
+    }
+
+    private void ProcessBase64Image(string base64)
+    {
+        if (geminiClient == null)
+        {
+            Debug.LogError("[CameraManager] GeminiClient is not assigned!");
+            return;
+        }
+
+        initialPanel.SetActive(false);
+        loadingPanel.SetActive(true);
+
+        try
+        {
+            byte[] imageBytes = Convert.FromBase64String(base64);
+            Texture2D tex = new Texture2D(2, 2);
+            if (tex.LoadImage(imageBytes))
+            {
+                // Clean up previous texture
+                if (previewDisplay != null && previewDisplay.texture != null)
+                {
+                    Destroy(previewDisplay.texture);
+                }
+
+                if (previewDisplay != null && contextPreviewDisplay != null)
+                {
+                    previewDisplay.texture = tex;
+                    contextPreviewDisplay.texture = tex;
+                    FitTextureInsideRawImage(tex);
+                }
+
+                // Debug mode: bypass AI call and show test result
+                if (bypassAICall)
+                {
+                    Debug.Log("[CameraManager] Debug mode: Bypassing AI call and showing UI test result.");
+                    loadingPanel.SetActive(false);
+                    resultsPanel.SetActive(true);
+                    if (resultText != null)
+                    {
+                        resultText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(headerColor)}>UI test</color>";
+                        resultText.text += "\nTotal Estimated Animals: 100";
+                        resultText.text += $"\n\nMaterials: <color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Animal Derived Materials</color>";
+                        resultText.text += "\nSome text to fill the space, I have no idea what to write here.";
+
+                    }
+                    if (UIManager.instance != null)
+                        UIManager.instance.SetTimeSpentText();
+                    return;
+                }
+
+                // Context mode: show context panel instead of immediately analyzing
+                if (provideMoreContext)
+                {
+                    Debug.Log("[CameraManager] Context mode enabled. Showing context panel.");
+                    pendingImageBytes = imageBytes;
+                    loadingPanel.SetActive(false);
+                    
+                    if (contextPanel != null)
+                    {
+                        contextPanel.SetActive(true);
+                        // Clear any previous context text
+                        if (contextInputField != null)
+                        {
+                            contextInputField.text = "";
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[CameraManager] Context panel not assigned! Proceeding without context.");
+                        StartAnalysis(imageBytes, null);
+                    }
+                    return;
+                }
+
+                StartAnalysis(imageBytes, null);
+            }
+            else
+            {
+                Debug.LogError("[CameraManager] Failed to load texture from base64 string.");
+                loadingPanel.SetActive(false);
+                initialPanel.SetActive(true);
+                if (resultText != null)
+                {
+                    resultText.text = "Error: Failed to process image. Please try again.";
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[CameraManager] Exception processing base64 image: {e.Message}");
+            loadingPanel.SetActive(false);
+            initialPanel.SetActive(true);
+            if (resultText != null)
+            {
+                resultText.text = "Error: Failed to process image. Please try again.";
+            }
+        }
     }
 
     private void ProcessImage(string path)
