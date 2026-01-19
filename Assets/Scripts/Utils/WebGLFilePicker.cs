@@ -4,19 +4,39 @@ using System.Runtime.InteropServices;
 
 public class WebGLFilePicker : MonoBehaviour
 {
-    // Singleton instance
-    public static WebGLFilePicker Instance { get; private set; }
+    private static WebGLFilePicker _instance;
+
+    public static WebGLFilePicker Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                // Try to find existing instance
+                _instance = FindObjectOfType<WebGLFilePicker>();
+
+                // If still null, create a new GameObject
+                if (_instance == null)
+                {
+                    GameObject go = new GameObject("WebGLFilePicker");
+                    _instance = go.AddComponent<WebGLFilePicker>();
+                    DontDestroyOnLoad(go);
+                }
+            }
+            return _instance;
+        }
+    }
 
     private Action<string> onImagePicked;
 
     void Awake()
     {
-        if (Instance == null)
+        if (_instance == null)
         {
-            Instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+        else if (_instance != this)
         {
             Destroy(gameObject);
         }

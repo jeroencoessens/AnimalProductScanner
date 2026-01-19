@@ -10,8 +10,8 @@ using TMPro;
 public class GeminiClient : MonoBehaviour
 {
     [Header("API Configuration")]
-    public string apiKey = "YOUR_API_KEY_HERE";
-    public string modelId = "gemini-1.5-flash"; // Valid Gemini model name
+    private string apiKey = "YOUR_API_KEY_HERE";
+    public string modelId = "gemini-2.5-flash"; 
 
     [Header("Prompt Configuration")]
     [TextArea(3, 10)]
@@ -25,6 +25,7 @@ public class GeminiClient : MonoBehaviour
     [Header("UI References")]
     public TMP_Text loadingDebugText;
     public TMP_Text resultText;
+    public TMP_InputField apiInputField;
 
     private string BaseUrl => $"https://generativelanguage.googleapis.com/v1beta/models/{modelId}:generateContent?key={apiKey}";
 
@@ -173,6 +174,12 @@ public class GeminiClient : MonoBehaviour
 
         localCache.entries.Add(new MaterialCacheEntry { materialName = materialName, productionSummary = summary });
         SaveCache();
+    }
+
+    public void SetAPIKey()
+    {
+        apiKey = apiInputField.text;
+        Debug.Log("API key was set!");
     }
 
     /// <summary>

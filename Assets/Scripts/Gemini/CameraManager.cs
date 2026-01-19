@@ -74,9 +74,16 @@ public class CameraManager : MonoBehaviour
         string path = EditorUtility.OpenFilePanel("Select Image", "", "jpg,png,jpeg");
         if (!string.IsNullOrEmpty(path)) ProcessImage(path);
 #elif UNITY_WEBGL
-        WebGLFilePicker.Instance.PickImage((base64) => {
-            ProcessBase64Image(base64);
-        });
+        if (WebGLFilePicker.Instance != null)
+        {
+            WebGLFilePicker.Instance.PickImage((base64) => {
+                ProcessBase64Image(base64);
+            });
+        }
+        else
+        {
+            Debug.LogError("WebGLFilePicker instance is null!");
+        }
 #else
         if (NativeCamera.IsCameraBusy()) return;
         NativeCamera.TakePicture((path) => {
@@ -90,9 +97,16 @@ public class CameraManager : MonoBehaviour
 #if UNITY_EDITOR
         OnTakeClick(); 
 #elif UNITY_WEBGL
-        WebGLFilePicker.Instance.PickImage((base64) => {
-            ProcessBase64Image(base64);
-        });
+        if (WebGLFilePicker.Instance != null)
+        {
+            WebGLFilePicker.Instance.PickImage((base64) => {
+                ProcessBase64Image(base64);
+            });
+        }
+        else
+        {
+            Debug.LogError("WebGLFilePicker instance is null!");
+        }
 #else
         if (NativeGallery.IsMediaPickerBusy()) return;
         NativeGallery.GetImageFromGallery((path) =>
