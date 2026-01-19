@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using TMPro;
 
 public class GeminiClient : MonoBehaviour
 {
@@ -18,6 +19,10 @@ public class GeminiClient : MonoBehaviour
     public bool enableDebugLogging = true;
     public bool logFullApiResponse = false;
     public bool validateApiKeyOnStart = true;
+
+    [Header("UI References")]
+    public TMP_Text loadingDebugText;
+    public TMP_Text resultText;
 
     private string BaseUrl => $"https://generativelanguage.googleapis.com/v1beta/models/{modelId}:generateContent?key={apiKey}";
 
@@ -127,6 +132,7 @@ public class GeminiClient : MonoBehaviour
         }
 
         Debug.Log("[GeminiClient] Testing API key...");
+        UpdateStatus("Testing API Key...");
         
         // Create a minimal test request
         string testPayload = @"{
@@ -149,12 +155,14 @@ public class GeminiClient : MonoBehaviour
             if (request.result == UnityWebRequest.Result.Success)
             {
                 Debug.Log("[GeminiClient] ✓ API Key test successful!");
+                UpdateStatus("API Key Valid!");
                 onResult?.Invoke(true);
             }
             else
             {
                 string errorMsg = $"API Key test failed: {request.error}\nResponse Code: {request.responseCode}\nResponse: {request.downloadHandler.text}";
                 Debug.LogError($"[GeminiClient] ✗ {errorMsg}");
+                ReportError(errorMsg);
                 onError?.Invoke(errorMsg);
                 onResult?.Invoke(false);
             }
@@ -163,11 +171,14 @@ public class GeminiClient : MonoBehaviour
 
     public IEnumerator AnalyzeImage(byte[] imageBytes, Action<PredictionResult> onParsedResult, Action<string> onError, string promptOverride = null)
     {
+        UpdateStatus("Initializing analysis...");
+
         // Validate API key
         if (string.IsNullOrEmpty(apiKey) || apiKey == "YOUR_API_KEY_HERE")
         {
             string errorMsg = "API Key is not set. Please set your Gemini API key in the GeminiClient component.";
             Debug.LogError($"[GeminiClient] {errorMsg}");
+            ReportError(errorMsg);
             onError?.Invoke(errorMsg);
             yield break;
         }
@@ -177,10 +188,12 @@ public class GeminiClient : MonoBehaviour
         {
             string errorMsg = "Model ID is not set.";
             Debug.LogError($"[GeminiClient] {errorMsg}");
+            ReportError(errorMsg);
             onError?.Invoke(errorMsg);
             yield break;
         }
 
+        UpdateStatus("Preparing image...");
         string base64Image = Convert.ToBase64String(imageBytes);
         if (enableDebugLogging)
         {
@@ -229,17 +242,27 @@ public class GeminiClient : MonoBehaviour
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
+            UpdateStatus("Sending request to Gemini...");
             if (enableDebugLogging)
             {
                 Debug.Log("[GeminiClient] Sending request to Gemini API...");
             }
             
             float startTime = Time.realtimeSinceStartup;
+
+            // Start the fake loading messages
+            Coroutine loadingRoutine = StartCoroutine(CycleLoadingMessages());
+
             yield return request.SendWebRequest();
+
+            // Stop the fake loading messages
+            if (loadingRoutine != null) StopCoroutine(loadingRoutine);
+
             float requestTime = Time.realtimeSinceStartup - startTime;
 
             if (request.result == UnityWebRequest.Result.Success)
             {
+                UpdateStatus("Processing response...");
                 if (enableDebugLogging)
                 {
                     Debug.Log($"[GeminiClient] API request successful (took {requestTime:F2}s), parsing response...");
@@ -257,6 +280,7 @@ public class GeminiClient : MonoBehaviour
                 }
                 
                 try {
+                    UpdateStatus("Parsing results...");
                     // 1. Parse the whole API wrapper
                     GeminiResponse fullResponse = JsonUtility.FromJson<GeminiResponse>(responseText);
                     
@@ -320,12 +344,14 @@ public class GeminiClient : MonoBehaviour
                         }
                     }
                     
+                    UpdateStatus("Analysis complete!");
                     onParsedResult?.Invoke(result);
                 }
                 catch (Exception e) {
                     string errorMsg = $"Parse Error: {e.Message}\n\nResponse text: {request.downloadHandler.text}";
                     Debug.LogError($"[GeminiClient] {errorMsg}");
                     Debug.LogException(e);
+                    ReportError(errorMsg);
                     onError?.Invoke(errorMsg);
                 }
             }
@@ -348,8 +374,50 @@ public class GeminiClient : MonoBehaviour
                     errorMsg += "\n\nTip: Rate limit exceeded. Please wait a moment and try again.";
                 }
                 
+                ReportError(errorMsg);
                 onError?.Invoke(errorMsg);
             }
+        }
+    }
+
+    private IEnumerator CycleLoadingMessages()
+    {
+        string[] messages = {
+            "Analyzing image pixels...",
+            "Identifying objects...",
+            "Detecting materials...",
+            "Consulting database...",
+            "Formulating responses...",
+            "Summarizing results...",
+            "Preparing user interface...",
+            "Finalizing analysis..."
+        };
+
+        int index = 0;
+        UpdateStatus("Sending request to Gemini...");
+        yield return new WaitForSeconds(2.5f);
+
+        while (index < messages.Length)
+        {
+            UpdateStatus(messages[index]);
+            index = (index + 1) % messages.Length;
+            yield return new WaitForSeconds(2f);
+        }
+    }
+
+    private void UpdateStatus(string status)
+    {
+        if (loadingDebugText != null)
+        {
+            loadingDebugText.text = status;
+        }
+    }
+
+    private void ReportError(string error)
+    {
+        if (resultText != null)
+        {
+            resultText.text = error;
         }
     }
 }

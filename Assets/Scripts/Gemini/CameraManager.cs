@@ -198,7 +198,7 @@ public class CameraManager : MonoBehaviour
             {
                 // Regular error handling - return to initial panel
                 loadingPanel.SetActive(false);
-                initialPanel.SetActive(true);
+                resultsPanel.SetActive(true); // Show results panel to display error
                 if (resultText != null)
                 {
                     resultText.text = $"<color=#FF5555><b>Error:</b></color>\n{error}";
