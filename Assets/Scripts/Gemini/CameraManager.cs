@@ -414,12 +414,12 @@ public class CameraManager : MonoBehaviour
             return;
         }
 
-        sb.AppendLine($"<b>--- Item {index + 1}: {item.itemName ?? "Unknown"} ---</b>");
+        sb.AppendLine($"<b>--- Item {index + 1}: {item.name ?? "Unknown"} ---</b>");
         
         // Animal-derived materials
-        if (item.animalDerivedMaterials != null && item.animalDerivedMaterials.Length > 0)
+        if (!string.IsNullOrEmpty(item.material))
         {
-            sb.AppendLine($"<b>Materials:</b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}> {string.Join(", ", item.animalDerivedMaterials)}</color>");
+            sb.AppendLine($"<b>Materials:</b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}> {item.material}</color>");
         }
         else
         {
@@ -427,15 +427,15 @@ public class CameraManager : MonoBehaviour
         }
 
         // Animal species
-        if (item.animalSpecies != null && item.animalSpecies.Length > 0)
+        if (!string.IsNullOrEmpty(item.species))
         {
-            sb.AppendLine($"<b>Species:</b> {string.Join(", ", item.animalSpecies)}");
+            sb.AppendLine($"<b>Species:</b> {item.species}");
         }
 
         // Animal count
-        if (item.estimatedAnimalCount > 0)
+        if (item.animal_count > 0)
         {
-            sb.AppendLine($"<b>Animals Used:</b> {item.estimatedAnimalCount:F2}");
+            sb.AppendLine($"<b>Animals Used:</b> {item.animal_count:F2}");
         }
 
         // Confidence
@@ -448,11 +448,11 @@ public class CameraManager : MonoBehaviour
         };
         sb.AppendLine($"<b>Confidence:</b> <color={confidenceColor}>{item.confidence?.ToUpper() ?? "UNKNOWN"}</color>");
 
-        // Animal species
+        // Production Summary
         sb.AppendLine();
-        if (item.specificMethodOfCreation != null && item.specificMethodOfCreation.Length > 0)
+        if (!string.IsNullOrEmpty(item.production_summary))
         {
-            sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>How is it made:</color></b> {string.Join(", ", item.specificMethodOfCreation)}");
+            sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {item.production_summary}");
         }
         
          resultText.text = sb.ToString();

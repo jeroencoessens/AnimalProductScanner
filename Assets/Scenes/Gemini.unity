@@ -234,7 +234,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.19280687, y: 0.053000003}
   m_AnchorMax: {x: 0.8114424, y: 0.074319646}
-  m_AnchoredPosition: {x: -1.2138977, y: 0.60009766}
+  m_AnchoredPosition: {x: -1.2138672, y: 0.60009766}
   m_SizeDelta: {x: -4.6354065, y: -0.6281738}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &230310475
@@ -370,7 +370,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.03976947, y: 0.90872}
   m_AnchorMax: {x: 0.95776945, y: 0.9402801}
-  m_AnchoredPosition: {x: 2.9296265, y: -3.2235107}
+  m_AnchoredPosition: {x: 2.9295654, y: -3.2235107}
   m_SizeDelta: {x: 7.525299, y: -1.9671001}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &271108622
@@ -755,7 +755,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.03976947, y: 0.5595601}
   m_AnchorMax: {x: 0.95776945, y: 0.9027991}
-  m_AnchoredPosition: {x: -1.7216187, y: -0.6577759}
+  m_AnchoredPosition: {x: -1.7215576, y: -0.6577759}
   m_SizeDelta: {x: -1.9039993, y: -1.4521}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &512315196
@@ -902,7 +902,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.4915161, y: 0.48999023}
+  m_AnchoredPosition: {x: -0.49145508, y: 0.48999023}
   m_SizeDelta: {x: 1, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &622070344
@@ -1133,7 +1133,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &715628723
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1444,7 +1444,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.03576012, y: 0.09028006}
   m_AnchorMax: {x: 0.95776945, y: 0.54859906}
-  m_AnchoredPosition: {x: 0.7227173, y: -1.5362549}
+  m_AnchoredPosition: {x: 0.72265625, y: -1.5362549}
   m_SizeDelta: {x: -7.2394, y: -2.9635}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &845502206
@@ -1584,7 +1584,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.18756695, y: 0.29164004}
   m_AnchorMax: {x: 0.8098848, y: 0.33228007}
-  m_AnchoredPosition: {x: 1.5000916, y: -0.5064697}
+  m_AnchoredPosition: {x: 1.5001221, y: -0.5064697}
   m_SizeDelta: {x: 0.4762993, y: -0.32589722}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &865973038
@@ -1717,7 +1717,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.0716729, y: 0.17}
   m_AnchorMax: {x: 0.92800003, y: 0.48776093}
-  m_AnchoredPosition: {x: 0.14923096, y: -2.5234375}
+  m_AnchoredPosition: {x: 0.14929199, y: -2.5234375}
   m_SizeDelta: {x: 0.2, y: 1.0469055}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &872292192
@@ -3597,7 +3597,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.07664485, y: 0.28656086}
   m_AnchorMax: {x: 0.9178941, y: 0.54200006}
-  m_AnchoredPosition: {x: -0.07537842, y: 0.080200195}
+  m_AnchoredPosition: {x: -0.07543945, y: 0.080200195}
   m_SizeDelta: {x: -0.15089989, y: 0.16049194}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1485666281
@@ -4016,7 +4016,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.0716729, y: 0.5}
   m_AnchorMax: {x: 0.92800003, y: 0.9035191}
-  m_AnchoredPosition: {x: -0.14178467, y: -1.6920166}
+  m_AnchoredPosition: {x: -0.14172363, y: -1.6920166}
   m_SizeDelta: {x: -0.2830699, y: -3.3839989}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1557536928
@@ -4092,7 +4092,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.18756695, y: 0.34320018}
   m_AnchorMax: {x: 0.8098848, y: 0.383756}
-  m_AnchoredPosition: {x: 1.5000916, y: 0.5}
+  m_AnchoredPosition: {x: 1.5001221, y: 0.5}
   m_SizeDelta: {x: 0.4762993, y: 2.6741028}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1666565192
@@ -4651,7 +4651,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.0716729, y: 0.078280054}
   m_AnchorMax: {x: 0.25155762, y: 0.15100001}
-  m_AnchoredPosition: {x: 46.5186, y: 0.66503906}
+  m_AnchoredPosition: {x: 46.518555, y: 0.66503906}
   m_SizeDelta: {x: 93.1049, y: 1.33}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1725168933
@@ -4777,42 +4777,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 18f6a90cc99474b318f0bd7bd5c79147, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeminiClient
-  apiKey: AIzaSyAMZzAKKONaaEhsjEZsJEcEJ13odKkE-Zw
+  apiKey: 
   modelId: gemini-2.5-flash
-  customPrompt: 'Analyze the image.
+  customPrompt: 'System Role: You are an expert in textile science and animal welfare
+    ethics.
 
+    Task: Analyze the attached image to identify clothing, footwear,
+    and textiles.
 
-    Identify visible clothing, footwear, furniture
-    or textiles items in the image.
+    Analysis Guidelines:
 
+    1. Material Identification: Focus
+    on likely animal-derived components (Leather, Wool, Silk, Down, Fur, Suede, Bone/Horn
+    buttons).
 
-    For each item:
+    2. Animal Count Logic: Use standard industry averages (e.g., 1
+    sheep yields ~4-5kg wool; 1 cow yields ~5 square meters of leather). Use fractions
+    for single items.
 
-    - Identify likely animal-derived
-    materials
+    3. Production Ethics: Summarize the standard industrial
+    processes, focusing on environmental impact and animal welfare. Use objective,
+    scientific language to describe common industry practices (e.g., mulesing, live-plucking,
+    chemical tanning).
 
-    - Identify animal species involved
+    Constraint: Do not perform a web search for common materials
+    like "Leather" or "Wool" unless the item is from a specific, identifiable brand
+    with unique practices. Use your internal knowledge base to save time.
 
-    - Estimate number of animals
-    used (fractions allowed)
-
-    - Assign confidence (low, medium, high)
-
-    -
-    Method of creation. For items with animal-derived materials (either animal-based
-    directly or animal-labour required) consult the web for resources (try to not
-    be influenced by propaganda by companies using animal-derived products, and instead
-    consult neutral sources like sciencedirect.com) on how the items are made. When
-    finding scientific info try to explain it in words understood by the general
-    audience and give a concise 3-sentence-maximum summary. The purpose is to inform
-    consumers about the unethical practices that take place in the production of
-    the product in the image search. These practices are largely hidden from consumers,
-    such as animal cruelty and human rights violations, and the goal is to educate
-    them better about how the products they use are made.
-
-
-    Return a JSON object
-    with these identifications'
+    Output
+    Format: Return a JSON object with this structure: { "summary": { "total_estimated_animals":
+    float, "item_count": int }, "items": [ { "name": "string", "material": "string",
+    "species": "string", "animal_count": float, "confidence": "Low|Medium|High",
+    "production_summary": "Max 3 sentences focusing on ethics/science." } ] }'
   enableDebugLogging: 1
   logFullApiResponse: 1
   validateApiKeyOnStart: 1

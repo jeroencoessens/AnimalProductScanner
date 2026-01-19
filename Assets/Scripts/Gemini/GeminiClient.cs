@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
@@ -30,41 +32,46 @@ public class GeminiClient : MonoBehaviour
     [Serializable]
     public class ItemAnalysis
     {
-        public string itemName;
-        public string[] animalDerivedMaterials;
-        public string[] animalSpecies;
-        public float estimatedAnimalCount; // Using float to support fractions
+        public string name; // Changed from itemName
+        public string material; // Changed from animalDerivedMaterials (array) to single string per item
+        public string species; // Changed from animalSpecies (array) to single string
+        public float animal_count; // Changed from estimatedAnimalCount
         public string confidence; // "low", "medium", "high"
-        public string specificMethodOfCreation; // "wild caught", "farm raised", "other"
+        public string production_summary; // New field
+    }
+
+    [Serializable]
+    public class PredictionSummary
+    {
+        public float total_estimated_animals;
+        public int item_count;
     }
 
     [Serializable]
     public class PredictionResult // Your specific data
     {
+        public PredictionSummary summary;
         public ItemAnalysis[] items;
         
         // Helper properties for backward compatibility and quick checks
         public bool ContainsAnimalProducts => items != null && items.Length > 0;
-        public int TotalItems => items != null ? items.Length : 0;
-        public float TotalEstimatedAnimalCount
-        {
-            get
-            {
-                if (items == null) return 0f;
-                float total = 0f;
-                foreach (var item in items)
-                {
-                    if (item != null) total += item.estimatedAnimalCount;
-                }
-                return total;
-            }
-        }
+        public int TotalItems => summary != null ? summary.item_count : (items != null ? items.Length : 0);
+        public float TotalEstimatedAnimalCount => summary != null ? summary.total_estimated_animals : 0f;
     }
 
     [Serializable]
     public class GeminiResponse
     {
         public Candidate[] candidates;
+        public UsageMetadata usageMetadata; // Added to capture token usage
+    }
+
+    [Serializable]
+    public class UsageMetadata
+    {
+        public int promptTokenCount;
+        public int candidatesTokenCount;
+        public int totalTokenCount;
     }
 
     [Serializable]
@@ -85,12 +92,87 @@ public class GeminiClient : MonoBehaviour
         public string text;
     }
 
+    // --- Local Cache Structure ---
+    [Serializable]
+    public class MaterialCacheEntry
+    {
+        public string materialName;
+        public string productionSummary;
+    }
+
+    [Serializable]
+    public class MaterialCache
+    {
+        public List<MaterialCacheEntry> entries = new List<MaterialCacheEntry>();
+    }
+
+    private MaterialCache localCache;
+    private string cacheFilePath;
+
     void Start()
     {
+        cacheFilePath = Path.Combine(Application.persistentDataPath, "MaterialCache.json");
+        LoadCache();
+
         if (validateApiKeyOnStart)
         {
             ValidateApiKey();
         }
+    }
+
+    private void LoadCache()
+    {
+        if (File.Exists(cacheFilePath))
+        {
+            try
+            {
+                string json = File.ReadAllText(cacheFilePath);
+                localCache = JsonUtility.FromJson<MaterialCache>(json);
+                if (enableDebugLogging) Debug.Log($"[GeminiClient] Loaded cache with {localCache.entries.Count} entries.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[GeminiClient] Failed to load cache: {e.Message}");
+                localCache = new MaterialCache();
+            }
+        }
+        else
+        {
+            localCache = new MaterialCache();
+        }
+    }
+
+    private void SaveCache()
+    {
+        try
+        {
+            string json = JsonUtility.ToJson(localCache, true);
+            File.WriteAllText(cacheFilePath, json);
+            if (enableDebugLogging) Debug.Log("[GeminiClient] Cache saved.");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[GeminiClient] Failed to save cache: {e.Message}");
+        }
+    }
+
+    private string GetCachedSummary(string materialName)
+    {
+        if (localCache == null || string.IsNullOrEmpty(materialName)) return null;
+        var entry = localCache.entries.FirstOrDefault(e => e.materialName.Equals(materialName, StringComparison.OrdinalIgnoreCase));
+        return entry?.productionSummary;
+    }
+
+    private void AddToCache(string materialName, string summary)
+    {
+        if (localCache == null || string.IsNullOrEmpty(materialName) || string.IsNullOrEmpty(summary)) return;
+        
+        // Check if already exists
+        if (localCache.entries.Any(e => e.materialName.Equals(materialName, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        localCache.entries.Add(new MaterialCacheEntry { materialName = materialName, productionSummary = summary });
+        SaveCache();
     }
 
     /// <summary>
@@ -200,13 +282,23 @@ public class GeminiClient : MonoBehaviour
             Debug.Log($"[GeminiClient] Starting analysis - Model: {modelId}, Image size: {imageBytes.Length} bytes ({imageBytes.Length / 1024f:F2} KB)");
         }
 
+        // Construct the prompt with knowledge of cached items
         string promptToUse = string.IsNullOrWhiteSpace(promptOverride) ? customPrompt : promptOverride;
+        
+        if (localCache != null && localCache.entries.Count > 0)
+        {
+            string knownMaterials = string.Join(", ", localCache.entries.Select(e => e.materialName));
+            promptToUse += $"\n\nNOTE: I already have detailed production summaries for the following materials: {knownMaterials}. If you identify any of these, please leave the 'production_summary' field empty or null to save tokens. I will fill it in from my local database.";
+        }
+
+        // Escape the prompt for JSON
+        string escapedPrompt = promptToUse.Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
 
         // GenerationConfig forces the model to be a robot and return JSON
         string jsonPayload = @"{
             ""contents"": [{
                 ""parts"": [
-                    {""text"": """ + promptToUse + @"""},
+                    {""text"": """ + escapedPrompt + @"""},
                     {""inline_data"": {""mime_type"": ""image/jpeg"", ""data"": """ + base64Image + @"""}}
                 ]
             }],
@@ -215,19 +307,26 @@ public class GeminiClient : MonoBehaviour
                 ""response_schema"": {
                     ""type"": ""OBJECT"",
                     ""properties"": {
+                        ""summary"": {
+                            ""type"": ""OBJECT"",
+                            ""properties"": {
+                                ""total_estimated_animals"": {""type"": ""NUMBER""},
+                                ""item_count"": {""type"": ""INTEGER""}
+                            }
+                        },
                         ""items"": {
                             ""type"": ""ARRAY"",
                             ""items"": {
                                 ""type"": ""OBJECT"",
                                 ""properties"": {
-                                    ""itemName"": {""type"": ""STRING""},
-                                    ""animalDerivedMaterials"": {""type"": ""ARRAY"", ""items"": {""type"": ""STRING""}},
-                                    ""animalSpecies"": {""type"": ""ARRAY"", ""items"": {""type"": ""STRING""}},
-                                    ""estimatedAnimalCount"": {""type"": ""NUMBER""},
+                                    ""name"": {""type"": ""STRING""},
+                                    ""material"": {""type"": ""STRING""},
+                                    ""species"": {""type"": ""STRING""},
+                                    ""animal_count"": {""type"": ""NUMBER""},
                                     ""confidence"": {""type"": ""STRING""},
-                                    ""specificMethodOfCreation"": {""type"": ""STRING""}
+                                    ""production_summary"": {""type"": ""STRING""}
                                 },
-                                ""required"": [""itemName"", ""confidence""]
+                                ""required"": [""name"", ""confidence""]
                             }
                         }
                     }
@@ -289,6 +388,12 @@ public class GeminiClient : MonoBehaviour
                     {
                         throw new Exception("Failed to parse API response - response is null");
                     }
+
+                    // Log Token Usage
+                    if (fullResponse.usageMetadata != null)
+                    {
+                        Debug.Log($"[GeminiClient] Token Usage - Prompt: {fullResponse.usageMetadata.promptTokenCount}, Response: {fullResponse.usageMetadata.candidatesTokenCount}, Total: {fullResponse.usageMetadata.totalTokenCount}");
+                    }
                     
                     if (fullResponse.candidates == null || fullResponse.candidates.Length == 0)
                     {
@@ -332,14 +437,53 @@ public class GeminiClient : MonoBehaviour
                         Debug.LogWarning("[GeminiClient] Result parsed but items array is null. This might be expected if no items were found.");
                         result.items = new ItemAnalysis[0];
                     }
-                    else if (enableDebugLogging)
+                    else
                     {
-                        Debug.Log($"[GeminiClient] Successfully parsed result! Found {result.items.Length} item(s)");
+                        // --- CACHE LOGIC ---
+                        bool cacheUpdated = false;
                         foreach (var item in result.items)
                         {
-                            if (item != null)
+                            if (item == null) continue;
+
+                            // If summary is missing, try to load from cache
+                            if (string.IsNullOrEmpty(item.production_summary))
                             {
-                                Debug.Log($"[GeminiClient]   - {item.itemName}: {item.animalDerivedMaterials?.Length ?? 0} materials, {item.estimatedAnimalCount} animals, confidence: {item.confidence}");
+                                string cachedSummary = GetCachedSummary(item.material);
+                                if (!string.IsNullOrEmpty(cachedSummary))
+                                {
+                                    item.production_summary = cachedSummary;
+                                    if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE HIT: Filled summary for '{item.material}' from local cache.");
+                                }
+                                else
+                                {
+                                    if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE MISS: No summary found for '{item.material}' in cache.");
+                                }
+                            }
+                            // If summary is present, save to cache if not already there
+                            else if (!string.IsNullOrEmpty(item.material))
+                            {
+                                if (GetCachedSummary(item.material) == null)
+                                {
+                                    AddToCache(item.material, item.production_summary);
+                                    cacheUpdated = true;
+                                    if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE UPDATE: Added new summary for '{item.material}' to cache.");
+                                }
+                                else
+                                {
+                                     if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE EXISTS: Summary for '{item.material}' already exists, skipping update.");
+                                }
+                            }
+                        }
+                        
+                        if (enableDebugLogging)
+                        {
+                            Debug.Log($"[GeminiClient] Successfully parsed result! Found {result.items.Length} item(s)");
+                            foreach (var item in result.items)
+                            {
+                                if (item != null)
+                                {
+                                    Debug.Log($"[GeminiClient]   - {item.name}: {item.material}, {item.animal_count} animals, confidence: {item.confidence}");
+                                }
                             }
                         }
                     }
