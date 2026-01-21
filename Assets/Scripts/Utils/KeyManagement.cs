@@ -15,6 +15,7 @@ public class KeyManagement : MonoBehaviour
     {
         if (PlayerPrefs.HasKey(PREFS_KEY))
         {
+            Debug.Log("Found key in PLAYER PREFS, loading now...");
             KeyInputField.text = PlayerPrefs.GetString(PREFS_KEY);
         }
     }
@@ -23,5 +24,6 @@ public class KeyManagement : MonoBehaviour
     {
         PlayerPrefs.SetString(PREFS_KEY, KeyInputField.text);
         PlayerPrefs.Save();
+        Debug.Log("Saved key successfully to PLAYER PREFS!");
     }
 }

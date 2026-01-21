@@ -33,8 +33,8 @@ public class CameraManager : MonoBehaviour
     public GameObject arrowsObject;
 
     [Header("Colors")]
-    public Color animalDerivedMaterialsColor = new Color(1, 0, 0);
-    public Color headerColor = new Color(0, 1, 0);
+    public Color animalDerivedMaterialsColor = new(1, 0, 0);
+    public Color headerColor = new(0, 1, 0);
 
 
     [Header("Debug Options")]
@@ -42,8 +42,8 @@ public class CameraManager : MonoBehaviour
     public bool bypassAICall = false;
     public GameObject aiCallCheckmark;
     public int FPS = 60;
-
-
+    
+    
     // Pending image data when waiting for context input
     private byte[] pendingImageBytes;
 
@@ -576,7 +576,7 @@ public class CameraManager : MonoBehaviour
             sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {item.production_summary}");
         }
         
-         resultText.text = sb.ToString();
+        resultText.text = sb.ToString();
     }
 
     public void OnMoreInfoClicked()
