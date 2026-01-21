@@ -26,4 +26,10 @@ public class KeyManagement : MonoBehaviour
         PlayerPrefs.Save();
         Debug.Log("Saved key successfully to PLAYER PREFS!");
     }
+
+    public void PasteFromClipboard()
+    {
+        KeyInputField.text = GUIUtility.systemCopyBuffer;
+        Debug.Log("Pasted successfully from clipboard");
+    }
 }
