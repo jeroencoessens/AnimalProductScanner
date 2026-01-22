@@ -29,7 +29,14 @@ public class KeyManagement : MonoBehaviour
 
     public void PasteFromClipboard()
     {
-        KeyInputField.text = GUIUtility.systemCopyBuffer;
-        Debug.Log("Pasted successfully from clipboard");
+        if (KeyInputField == null) return;
+
+        ClipboardManager.Instance.PasteFromClipboard((text) => {
+            if (!string.IsNullOrEmpty(text))
+            {
+                KeyInputField.text = text;
+                Debug.Log("Pasted successfully from clipboard via ClipboardManager");
+            }
+        });
     }
 }

@@ -116,6 +116,35 @@ public class CameraManager : MonoBehaviour
 #endif
     }
 
+    // --- NEW: Helper method to paste from clipboard ---
+    public void OnPasteFromClipboardClick()
+    {
+        if (contextInputField == null) return;
+
+        ClipboardManager.Instance.PasteFromClipboard((text) => {
+            if (!string.IsNullOrEmpty(text))
+            {
+                // Append or replace text? Let's append for now, or insert at cursor if possible.
+                // For simplicity, let's just append or set.
+                // contextInputField.text = text; // Replace
+                
+                // Better: Insert at cursor position or append
+                int caretPos = contextInputField.caretPosition;
+                string currentText = contextInputField.text;
+                
+                if (caretPos >= 0 && caretPos <= currentText.Length)
+                {
+                    contextInputField.text = currentText.Insert(caretPos, text);
+                    contextInputField.caretPosition = caretPos + text.Length;
+                }
+                else
+                {
+                    contextInputField.text += text;
+                }
+            }
+        });
+    }
+
     private bool IsUsageLimitError(string errorMessage)
     {
         if (string.IsNullOrEmpty(errorMessage))
