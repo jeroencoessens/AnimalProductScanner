@@ -17,6 +17,19 @@ public class GeminiClient : MonoBehaviour
     [TextArea(3, 10)]
     public string customPrompt = "Analyze the image.\n\nIdentify visible clothing or footwear items in the image.\n\nFor each item:\n- Identify likely animal-derived materials\n- Identify animal species involved\n- Estimate number of animals used (fractions allowed)\n- Assign confidence (low, medium, high)\n\nReturn a JSON object with these identifications";
 
+    [Header("Reverse Image Search")]
+    [Tooltip("When enabled, asks Gemini to perform a reverse image search to find the product online and scrape accurate material information.")]
+    public bool enableReverseImageSearch = false;
+    
+    [Range(1, 5)]
+    [Tooltip("Maximum number of items to perform reverse image search for (to avoid overloading the API).")]
+    public int maxItemsToSearchOnline = 3;
+    
+    [TextArea(3, 10)]
+    [Tooltip("Additional prompt text to append when reverse image search is enabled.")]
+    //keep private, otherwise inspector prompt will override this
+    private string reverseImageSearchPrompt = "\n\nIMPORTANT: For EACH identified item (up to {MAX_ITEMS} items), perform a separate reverse image search to identify if that specific product is available in online stores. If found, scrape the product details from the store's website to get accurate material composition instead of estimating. For each item's 'production_summary' field:\n- If found online: Start with '[PRODUCT FOUND: {product_name} from {store/brand}]' followed by the full production ethics summary (environmental impact, animal welfare, industry practices)\n- If not found online: Start with '[NO ONLINE MATCH]' and STILL PROVIDE A COMPLETE production ethics analysis based on visual inspection of the materials (covering environmental impact, animal welfare concerns, and industry practices - maximum 3 sentences)\n- If you've already searched {MAX_ITEMS} items: Skip the search, start with '[SEARCH LIMIT REACHED]' and STILL PROVIDE A COMPLETE production ethics analysis based on visual inspection";
+
     [Header("Debug Options")]
     public bool enableDebugLogging = true;
     public bool logFullApiResponse = false;
@@ -292,6 +305,18 @@ public class GeminiClient : MonoBehaviour
         // Construct the prompt with knowledge of cached items
         string promptToUse = string.IsNullOrWhiteSpace(promptOverride) ? customPrompt : promptOverride;
         
+        // Add reverse image search prompt if enabled
+        if (enableReverseImageSearch && !string.IsNullOrWhiteSpace(reverseImageSearchPrompt))
+        {
+            // Replace placeholder with actual max items value
+            string processedSearchPrompt = reverseImageSearchPrompt.Replace("{MAX_ITEMS}", maxItemsToSearchOnline.ToString());
+            promptToUse += processedSearchPrompt;
+            if (enableDebugLogging)
+            {
+                Debug.Log($"[GeminiClient] Reverse image search enabled (max {maxItemsToSearchOnline} items) - appending additional prompt.");
+            }
+        }
+        
         if (localCache != null && localCache.entries.Count > 0)
         {
             string knownMaterials = string.Join(", ", localCache.entries.Select(e => e.materialName));
@@ -452,13 +477,58 @@ public class GeminiClient : MonoBehaviour
                         {
                             if (item == null) continue;
 
-                            // If summary is missing, try to load from cache
-                            if (string.IsNullOrEmpty(item.production_summary))
+                            // Skip if no material or material is empty
+                            if (string.IsNullOrEmpty(item.material)) continue;
+
+                            // Extract the actual ethics summary from tagged responses
+                            string ExtractEthicsSummary(string summary)
+                            {
+                                if (string.IsNullOrEmpty(summary)) return null;
+                                
+                                // Remove tags and extract content
+                                if (summary.StartsWith("[PRODUCT FOUND:"))
+                                {
+                                    int endBracket = summary.IndexOf(']');
+                                    return endBracket > 0 ? summary.Substring(endBracket + 1).Trim() : summary;
+                                }
+                                else if (summary.StartsWith("[NO ONLINE MATCH]"))
+                                {
+                                    return summary.Replace("[NO ONLINE MATCH]", "").Trim();
+                                }
+                                else if (summary.StartsWith("[SEARCH LIMIT REACHED]"))
+                                {
+                                    return summary.Replace("[SEARCH LIMIT REACHED]", "").Trim();
+                                }
+                                return summary;
+                            }
+
+                            // If summary is missing or empty after tag removal, try to load from cache
+                            string currentEthicsSummary = ExtractEthicsSummary(item.production_summary);
+                            
+                            if (string.IsNullOrEmpty(currentEthicsSummary))
                             {
                                 string cachedSummary = GetCachedSummary(item.material);
                                 if (!string.IsNullOrEmpty(cachedSummary))
                                 {
-                                    item.production_summary = cachedSummary;
+                                    // Preserve the tag if present, append cached summary
+                                    if (!string.IsNullOrEmpty(item.production_summary) && 
+                                        (item.production_summary.StartsWith("[")))
+                                    {
+                                        int endBracket = item.production_summary.IndexOf(']');
+                                        if (endBracket > 0)
+                                        {
+                                            string tag = item.production_summary.Substring(0, endBracket + 1);
+                                            item.production_summary = tag + " " + cachedSummary;
+                                        }
+                                        else
+                                        {
+                                            item.production_summary = cachedSummary;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        item.production_summary = cachedSummary;
+                                    }
                                     if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE HIT: Filled summary for '{item.material}' from local cache.");
                                 }
                                 else
@@ -466,12 +536,12 @@ public class GeminiClient : MonoBehaviour
                                     if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE MISS: No summary found for '{item.material}' in cache.");
                                 }
                             }
-                            // If summary is present, save to cache if not already there
-                            else if (!string.IsNullOrEmpty(item.material))
+                            // If summary is present, save the clean version to cache if not already there
+                            else if (!string.IsNullOrEmpty(currentEthicsSummary))
                             {
                                 if (GetCachedSummary(item.material) == null)
                                 {
-                                    AddToCache(item.material, item.production_summary);
+                                    AddToCache(item.material, currentEthicsSummary);
                                     cacheUpdated = true;
                                     if (enableDebugLogging) Debug.Log($"[GeminiClient] CACHE UPDATE: Added new summary for '{item.material}' to cache.");
                                 }

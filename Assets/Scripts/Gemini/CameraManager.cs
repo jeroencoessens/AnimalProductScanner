@@ -41,6 +41,10 @@ public class CameraManager : MonoBehaviour
     [Tooltip("When enabled, bypasses the AI call and shows 'UI test' in results. Useful for testing UI flow without API calls.")]
     public bool bypassAICall = false;
     public GameObject aiCallCheckmark;
+    
+    [Tooltip("Checkmark to show when reverse image search is enabled.")]
+    public GameObject reverseImageSearchCheckmark;
+    
     public int FPS = 60;
     
     
@@ -566,26 +570,33 @@ public class CameraManager : MonoBehaviour
 
         sb.AppendLine($"<b>--- Item {index + 1}: {item.name ?? "Unknown"} ---</b>");
         
+        // Determine if this item has animal-derived materials
+        bool hasAnimalMaterials = !string.IsNullOrEmpty(item.material);
+        
         // Animal-derived materials
-        if (!string.IsNullOrEmpty(item.material))
+        if (hasAnimalMaterials)
         {
-            sb.AppendLine($"<b>Materials:</b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}> {item.material}</color>");
+            sb.AppendLine($"<b>Materials:</b> <color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>{item.material}</color>");
         }
         else
         {
             sb.AppendLine($"<b>Materials:</b> <color=#55FF55>No animal-derived materials detected</color>");
         }
 
-        // Animal species
-        if (!string.IsNullOrEmpty(item.species))
+        // Only show additional details if animal materials are present
+        if (hasAnimalMaterials)
         {
-            sb.AppendLine($"<b>Species:</b> {item.species}");
-        }
+            // Animal species
+            if (!string.IsNullOrEmpty(item.species))
+            {
+                sb.AppendLine($"<b>Species:</b> {item.species}");
+            }
 
-        // Animal count
-        if (item.animal_count > 0)
-        {
-            sb.AppendLine($"<b>Animals Used:</b> {item.animal_count:F2}");
+            // Animal count
+            if (item.animal_count > 0)
+            {
+                sb.AppendLine($"<b>Animals Used:</b> {item.animal_count:F2}");
+            }
         }
 
         // Confidence
@@ -598,11 +609,69 @@ public class CameraManager : MonoBehaviour
         };
         sb.AppendLine($"<b>Confidence:</b> <color={confidenceColor}>{item.confidence?.ToUpper() ?? "UNKNOWN"}</color>");
 
-        // Production Summary
-        sb.AppendLine();
-        if (!string.IsNullOrEmpty(item.production_summary))
+        // Production Summary - only show if animal materials are present
+        if (hasAnimalMaterials && !string.IsNullOrEmpty(item.production_summary))
         {
-            sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {item.production_summary}");
+            sb.AppendLine();
+            
+            // Check if this is a reverse image search result
+            if (item.production_summary.StartsWith("[PRODUCT FOUND:"))
+            {
+                // Extract and format the product found message
+                int endBracket = item.production_summary.IndexOf(']');
+                if (endBracket > 0)
+                {
+                    string productInfo = item.production_summary.Substring(0, endBracket + 1);
+                    string ethicsSummary = item.production_summary.Substring(endBracket + 1).Trim();
+                    
+                    sb.AppendLine($"<b><color=#55FF55>✓ Online Product Match:</color></b> {productInfo.Replace("[PRODUCT FOUND:", "").Replace("]", "")}");
+                    
+                    if (!string.IsNullOrEmpty(ethicsSummary))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {ethicsSummary}");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {item.production_summary}");
+                }
+            }
+            else if (item.production_summary.StartsWith("[NO ONLINE MATCH]"))
+            {
+                string ethicsSummary = item.production_summary.Replace("[NO ONLINE MATCH]", "").Trim();
+                
+                if (geminiClient != null && geminiClient.enableReverseImageSearch)
+                {
+                    sb.AppendLine($"<b><color=#FFAA55>⚠ No online product match found</color></b>");
+                }
+                
+                if (!string.IsNullOrEmpty(ethicsSummary))
+                {
+                    sb.AppendLine();
+                    sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {ethicsSummary}");
+                }
+            }
+            else if (item.production_summary.StartsWith("[SEARCH LIMIT REACHED]"))
+            {
+                string ethicsSummary = item.production_summary.Replace("[SEARCH LIMIT REACHED]", "").Trim();
+                
+                if (geminiClient != null && geminiClient.enableReverseImageSearch)
+                {
+                    sb.AppendLine($"<b><color=#AAAAAA>ℹ Online search limit reached - using visual analysis</color></b>");
+                }
+                
+                if (!string.IsNullOrEmpty(ethicsSummary))
+                {
+                    sb.AppendLine();
+                    sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {ethicsSummary}");
+                }
+            }
+            else
+            {
+                // No tag, just show the ethics summary
+                sb.AppendLine($"<b><color=#{ColorUtility.ToHtmlStringRGB(animalDerivedMaterialsColor)}>Production Ethics:</color></b> {item.production_summary}");
+            }
         }
         
         resultText.text = sb.ToString();
@@ -618,5 +687,23 @@ public class CameraManager : MonoBehaviour
         bypassAICall = !bypassAICall;
         Debug.Log($"AI call bypass: {(bypassAICall ? "ON" : "OFF")}");
         aiCallCheckmark.SetActive(bypassAICall);
+    }
+
+    public void OnToggleReverseImageSearch()
+    {
+        if (geminiClient != null)
+        {
+            geminiClient.enableReverseImageSearch = !geminiClient.enableReverseImageSearch;
+            Debug.Log($"[CameraManager] Reverse Image Search: {(geminiClient.enableReverseImageSearch ? "ON" : "OFF")}");
+            
+            if (reverseImageSearchCheckmark != null)
+            {
+                reverseImageSearchCheckmark.SetActive(geminiClient.enableReverseImageSearch);
+            }
+        }
+        else
+        {
+            Debug.LogError("[CameraManager] GeminiClient is not assigned!");
+        }
     }
 }

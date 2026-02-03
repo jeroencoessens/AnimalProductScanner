@@ -845,6 +845,7 @@ MonoBehaviour:
   headerColor: {r: 0.7216981, g: 0.90891933, b: 1, a: 1}
   bypassAICall: 0
   aiCallCheckmark: {fileID: 648934474}
+  reverseImageSearchCheckmark: {fileID: 0}
   FPS: 60
 --- !u!4 &343874620
 Transform:
@@ -7006,6 +7007,16 @@ MonoBehaviour:
     float, "item_count": int }, "items": [ { "name": "string", "material": "string",
     "species": "string", "animal_count": float, "confidence": "Low|Medium|High",
     "production_summary": "Max 3 sentences focusing on ethics/science." } ] }'
+  enableReverseImageSearch: 1
+  reverseImageSearchPrompt: '
+
+
+    IMPORTANT: Perform a reverse image search to
+    identify if this product is available in online stores. If found, scrape the
+    product details from the store''s website to get accurate material composition
+    instead of estimating. In the ''production_summary'' field, start with ''[PRODUCT
+    FOUND: {product_name} from {store/brand}]'' followed by the ethics summary. If
+    not found online, start with ''[NO ONLINE MATCH]'' and proceed with visual analysis.'
   enableDebugLogging: 1
   logFullApiResponse: 1
   validateApiKeyOnStart: 1

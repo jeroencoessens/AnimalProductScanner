@@ -1,0 +1,7 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="NativeCamera.Runtime.csproj" />
+  <Project Path="NativeGallery.Runtime.csproj" />
+  <Project Path="NativeGallery.Editor.csproj" />
+  <Project Path="NativeCamera.Editor.csproj" />
+</Solution>
