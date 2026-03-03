@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Animal Product Scanner</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ==================== SCREEN 1: START ==================== -->
+    <div id="screen-start" class="screen active">
+        <div class="screen-content">
+            <div class="app-header">
+                <div class="app-icon">🔍</div>
+                <h1>Animal Product Scanner</h1>
+                <p class="subtitle">Upload a photo to identify animal-derived materials in clothing &amp; textiles</p>
+            </div>
+
+            <!-- API Key Section -->
+            <div class="card api-card">
+                <div class="card-header">
+                    <span class="card-icon">🔑</span>
+                    <h2>Gemini API Key</h2>
+                </div>
+                <div class="api-key-row">
+                    <input type="password" id="api-key-input" placeholder="Paste your API key here" autocomplete="off">
+                    <button id="toggle-key-visibility" class="icon-btn" title="Show/hide key">👁️</button>
+                </div>
+                <div class="api-key-actions">
+                    <button id="save-key-btn" class="btn btn-secondary btn-sm">Save Key</button>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="btn btn-link btn-sm">Get a free API key →</a>
+                </div>
+                <div id="api-key-status" class="status-msg hidden"></div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="card upload-card">
+                <div class="card-header">
+                    <span class="card-icon">📸</span>
+                    <h2>Scan an Image</h2>
+                </div>
+                <div class="upload-buttons">
+                    <button id="btn-camera" class="btn btn-primary btn-large">
+                        <span class="btn-icon">📷</span>
+                        Take Photo
+                    </button>
+                    <button id="btn-gallery" class="btn btn-primary btn-large">
+                        <span class="btn-icon">🖼️</span>
+                        Choose from Gallery
+                    </button>
+                </div>
+                <!-- Hidden file inputs -->
+                <input type="file" id="file-camera" accept="image/*" capture="environment" class="hidden-input">
+                <input type="file" id="file-gallery" accept="image/*" class="hidden-input">
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 2: CONTEXT ==================== -->
+    <div id="screen-context" class="screen">
+        <div class="screen-content">
+            <div class="context-header">
+                <h2>Add Context <span class="optional-badge">optional</span></h2>
+                <p>Provide any extra details about the image to improve accuracy.</p>
+            </div>
+
+            <div class="context-preview-container">
+                <img id="context-preview" alt="Selected image preview">
+            </div>
+
+            <div class="card">
+                <textarea id="context-input" rows="3" placeholder="e.g. 'This is a vintage jacket from the 1970s' or 'Focus on the boots'"></textarea>
+            </div>
+
+            <div class="context-actions">
+                <button id="btn-context-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="btn-context-confirm" class="btn btn-primary">
+                    <span class="btn-icon">🔍</span>
+                    Analyze
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 3: LOADING ==================== -->
+    <div id="screen-loading" class="screen">
+        <div class="screen-content loading-content">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-icon">🔬</div>
+            </div>
+            <p id="loading-status" class="loading-text">Sending request to Gemini...</p>
+            <p class="loading-sub">This usually takes 10-20 seconds</p>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 4: RESULTS ==================== -->
+    <div id="screen-results" class="screen">
+        <div class="screen-content results-content">
+            <div class="results-image-container">
+                <img id="results-preview" alt="Analyzed image">
+            </div>
+
+            <!-- Item Navigation -->
+            <div id="item-nav" class="item-nav hidden">
+                <button id="btn-prev" class="nav-arrow" disabled>◀</button>
+                <span id="item-counter" class="item-counter">1 / 1</span>
+                <button id="btn-next" class="nav-arrow" disabled>▶</button>
+            </div>
+
+            <!-- Summary Bar -->
+            <div id="summary-bar" class="summary-bar hidden">
+                <span id="summary-items" class="summary-chip">0 items</span>
+                <span id="summary-animals" class="summary-chip animals">~0 animals</span>
+            </div>
+
+            <!-- Result Card -->
+            <div id="result-card" class="card result-card">
+                <div id="result-body">
+                    <p class="placeholder-text">Waiting for results...</p>
+                </div>
+            </div>
+
+            <button id="btn-try-again" class="btn btn-primary btn-large try-again-btn">
+                <span class="btn-icon">🔄</span>
+                Scan Another Image
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
